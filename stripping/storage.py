@@ -51,6 +51,10 @@ class CacheStorage:
                          hashlib.sha1(input_args).hexdigest()))
 
     def get_step(self, step_code:str, *args, **kwargs):
+        # TODO: Lazyload context and return - this will prevent deserializing a lot of data until a
+        #  step if finally in need of reprocessing. Context is incremental, so there is no need to load it
+        #  any sooner than it will actually be needed and used inside the code.
+
         step_name = step_code  # TODO extract step name
         location = self.step_location(step_code, *args, **kwargs)
         if location.exists():
