@@ -35,11 +35,10 @@ class StepCache:
         self.context = context
 
     async def execute_or_retrieve(self, step_fn, *args, **kwargs):
-        step_code = inspect.getsource(step_fn)
-
         try:
-            return self.storage.get_step(step_code, *args, **kwargs)
-        except StepNotCached():
+            return self.storage.get_step(step_fn.name, step_fn.code, self.context, *args, **kwargs)
+        except StepNotCached:
+            print(f"Step '{step_fn.name}' is not cached. Executing...")
             step_return = None
 
             if inspect.iscoroutinefunction(step_fn):
@@ -47,6 +46,6 @@ class StepCache:
             else:
                 step_return = step_fn(*args, **kwargs)
 
-            self.storage.save_step(step_code, step_return, self.context, *args, **kwargs)
+            self.storage.save_step(step_fn.code, step_return, self.context, *args, **kwargs)
 
             return step_return
