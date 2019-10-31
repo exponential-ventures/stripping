@@ -112,4 +112,4 @@ class Stripping:
 
     async def _execute(self):
         for i in range(len(self.steps)):
-            results = await self.cache.execute_or_retrieve(self.steps[i])
+            await self.cache.execute_or_retrieve(self.steps[i])

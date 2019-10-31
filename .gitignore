@@ -111,4 +111,7 @@ venv.bak/
 
 docker/data/
 
+# Steps cache
 .stripping
+
+.DS_Store
