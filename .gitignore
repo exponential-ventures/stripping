@@ -116,3 +116,7 @@ docker/data/
 .stripping
 
 .DS_Store
+
+# Logs
+/log/*
+!/log/.keep

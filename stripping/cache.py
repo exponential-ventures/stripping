@@ -17,11 +17,13 @@
 
 
 import inspect
+import logging
 
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
 from .storage import CacheStorage
 
+LOG = logging.getLogger('stripping')
 
 @SingletonDecorator
 class StepCache:
@@ -38,7 +40,7 @@ class StepCache:
         try:
             return self.storage.get_step(step_fn.name, step_fn.code, self.context, *args, **kwargs)
         except StepNotCached:
-            print(f"Step '{step_fn.name}' is not cached. Executing...")
+            LOG.info(f"Step '{step_fn.name}' is not cached. Executing...")
             step_return = None
 
             if inspect.iscoroutinefunction(step_fn):
