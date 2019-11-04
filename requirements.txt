@@ -1,7 +1,2 @@
 asynctest==0.13.0
-cython>=0.29
-numpy
-pandas
-scipy
-sklearn
 --extra-index-url --trusted-host http://10.17.31.227/ catalysis_client
