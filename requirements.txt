@@ -1,2 +1,3 @@
+--extra-index-url=http://10.17.31.227/simple --trusted-host 10.17.31.227
 asynctest==0.13.0
---extra-index-url --trusted-host http://10.17.31.227/ catalysis_client
+catalysis_client==0.1
