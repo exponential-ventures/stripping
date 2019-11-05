@@ -28,6 +28,7 @@ import numpy as np
 from .cache import StepCache
 from .singleton import SingletonDecorator
 
+LOG = logging.getLogger('stripping')
 
 @SingletonDecorator
 class Context:
@@ -42,6 +43,8 @@ class Context:
         if exists(attr_file_name):
             self._deserialize(attr_file_name)
             return getattr(self, attr_name)
+
+        LOG.warn(f"Attribute '{attr_name}' was not found.")
         raise AttributeError(f"Attribute '{attr_name}' was not found.")
 
     def serialize(self) -> None:
@@ -54,13 +57,13 @@ class Context:
                 continue
 
             context_file_name = join(self.__context_location, attr)
-            logging.info(f"Serializing context attribute '{attr}' to '{context_file_name}'...")
+            LOG.info(f"Serializing context attribute '{attr}' to '{context_file_name}'...")
             with open(context_file_name, 'wb') as attr_file:
                 if isinstance(attribute, np.ndarray):
-                    logging.debug(f"  Context Attribute '{attr}' is a numpy array.")
+                    LOG.debug(f"  Context Attribute '{attr}' is a numpy array.")
                     np.save(attr_file, attribute)
                 else:
-                    logging.debug(f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
+                    LOG.debug( f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
                     pickle.dump(attribute, attr_file)
 
     def deserialize(self) -> None:
@@ -71,15 +74,15 @@ class Context:
         logging.info(f"Deserializing context attribute from '{attr_file_name}'")
         with open(attr_file_name, 'rb') as attr_file:
             try:
-                logging.debug(f"  Attempting to deserialize '{attr_file_name}' with pickle...")
+                LOG.debug(f"  Attempting to deserialize '{attr_file_name}' with pickle...")
                 setattr(self, attr_file_name, pickle.load(attr_file))
-                logging.debug(
+                LOG.debug(
                     f"    Successfully deserialized '{attr_file_name}' as a python object of "
                     f"type '{type(getattr(self, attr_file_name))}'")
             except:
-                logging.debug(f"  Attempting to deserialize '{attr_file_name}' with numpy...")
+                LOG.debug(f"  Attempting to deserialize '{attr_file_name}' with numpy...")
                 setattr(self, attr_file_name, np.load(attr_file))
-                logging.debug(f"    Successfully deserialized '{attr_file_name}' as a numpy array.")
+                LOG.debug(f"    Successfully deserialized '{attr_file_name}' as a numpy array.")
 
 
 @SingletonDecorator
