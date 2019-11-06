@@ -22,12 +22,13 @@ from glob import glob
 import os
 import datetime
 import logging
+from collections import defaultdict
 
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
 from .storage import CacheStorage
 
-ACCESS = 'acess'
+ACCESS = 'access'
 DIR_PATH = 'path'
 LOG = logging.getLogger('stripping')
 
@@ -88,17 +89,27 @@ class CacheInvalidation:
 
     def strategy(self):
         """
-            Removes cached files which haven't being accessed for 1 year or more
+            A Cache is deleted when:
+                - it haven't being accessed for 3 months or more.
+                - free disk space reaches <= 15%
         """
 
-        one_year_ago_timestamp = datetime.datetime.timestamp(self.year_ago(1))
+        three_months_ago_timestamp = datetime.datetime.timestamp(self.year_ago(0.25))
+
         for d in self.__cached_dirs.keys():
+            self.__cached_dirs[d] = {}
             for dir_path in glob('{}/*'.format(d)):
-                self.__cached_dirs[d] = {}
-                self.__cached_dirs[d][DIR_PATH] = dir_path
-                self.__cached_dirs[d][ACCESS] = self.__last_access(dir_path)
-                if self.__cached_dirs[d][ACCESS] <= one_year_ago_timestamp:
-                    self.force_delete(self.__cached_dirs[d][DIR_PATH])
+                self.__cached_dirs[d][dir_path] = {}
+                self.__cached_dirs[d][dir_path][ACCESS] = self.__last_access(dir_path)
+                if self.__cached_dirs[d][dir_path][ACCESS] <= three_months_ago_timestamp:
+                    self.force_delete(self.__cached_dirs[d][dir_path])
+
+            if self.percentage_disk_free_space() < 15.00:
+               if len(self.__cached_dirs[d]) > 0:
+                   # sort the list by least access
+                   sorted_cache_list = sorted(self.__cached_dirs[d].items(), key=lambda x: x[1][ACCESS])
+                   self.force_delete(sorted_cache_list[0][0])
+
 
     async def strategy_runner(self):
         while True:
@@ -116,3 +127,9 @@ class CacheInvalidation:
 
     def year_ago(self, years: int = 1):
         return datetime.datetime.now() - datetime.timedelta(days=years*365)
+
+    def percentage_disk_free_space(self):
+        stats = os.statvfs('/')
+        total = stats.f_frsize * stats.f_blocks
+        free = stats.f_frsize * stats.f_bavail
+        return (free/total) * 100

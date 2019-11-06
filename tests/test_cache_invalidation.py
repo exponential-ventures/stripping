@@ -33,7 +33,7 @@ class TestCacheInvalidation(asynctest.TestCase):
         self.cache_invalidation.strategy()
         self.assertTrue(len(glob(f'{tmp_dir}{os.sep}*')) >= 0)
 
-        with freeze_time(datetime.datetime.now() + datetime.timedelta(days=1*365)):
+        with freeze_time(datetime.datetime.now() + datetime.timedelta(days=0.25*365)):
             self.cache_invalidation.strategy()
 
         self.assertEqual(0, len(glob(f'{tmp_dir}{os.sep}*')))
