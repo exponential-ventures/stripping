@@ -37,6 +37,7 @@ class CacheStorage:
     def __init__(self, cache_dir: str,  catalysis_credentials: str = None) -> None:
         self.cache_dir = cache_dir
         self.catalysis_credentials = catalysis_credentials
+        self.catalysis_client = None
         if not exists(self.cache_dir):
             makedirs(self.cache_dir)
 
