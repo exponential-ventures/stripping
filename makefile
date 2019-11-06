@@ -1,5 +1,5 @@
 build:
-	docker build  -f docker/dev/Dockerfile -t stripping .
+	docker build  -f docker/Dockerfile -t stripping .
 
 test:
 	docker run -it --rm stripping python -m unittest -v -f tests
