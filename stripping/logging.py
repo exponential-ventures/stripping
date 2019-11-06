@@ -16,8 +16,8 @@
 ##
 
 import logging
-from logging.config import fileConfig
 import os
+from logging.config import fileConfig
 from pathlib import Path
 
 from stripping.singleton import SingletonDecorator

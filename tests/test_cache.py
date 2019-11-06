@@ -15,21 +15,22 @@
 ## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
 
-import asynctest
-from os.path import split, join
 import shutil
+from os.path import split, join
 
-from stripping.cache import StepCache
-from stripping.executor import Context
+import asynctest
+
 from stripping import setup_stripping
+from stripping.cache import StepCache
 
 tmp_dir = join(split(__file__)[0], '.test_cache')
 
 st, context = setup_stripping(tmp_dir)
 
+
 @st.step
 def test_step():
-   return 'Hello'
+    return 'Hello'
 
 
 class TestCache(asynctest.TestCase):

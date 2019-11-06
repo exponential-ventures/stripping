@@ -30,6 +30,7 @@ from .singleton import SingletonDecorator
 
 LOG = logging.getLogger('stripping')
 
+
 @SingletonDecorator
 class Context:
     def __init__(self):
@@ -63,7 +64,7 @@ class Context:
                     LOG.debug(f"  Context Attribute '{attr}' is a numpy array.")
                     np.save(attr_file, attribute)
                 else:
-                    LOG.debug( f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
+                    LOG.debug(f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
                     pickle.dump(attribute, attr_file)
 
     def deserialize(self) -> None:

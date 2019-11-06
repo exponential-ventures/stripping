@@ -16,11 +16,12 @@
 ##
 
 
-from .executor import Stripping, Context
 from .cache import StepCache
+from .executor import Stripping, Context
 from .logging import Logging
 
 Logging().get_logger()
+
 
 def setup_stripping(cache_dir):
     st, c = Stripping(cache_dir), Context()

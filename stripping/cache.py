@@ -25,6 +25,7 @@ from .storage import CacheStorage
 
 LOG = logging.getLogger('stripping')
 
+
 @SingletonDecorator
 class StepCache:
     context = None
