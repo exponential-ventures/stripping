@@ -16,5 +16,6 @@
 ##
 
 from .test_cache import TestCache
+from .test_cache_with_catalysis import TestCacheWithCatalysis
 from .test_executor import TestExecutor
 from .test_storage import TestStorage
