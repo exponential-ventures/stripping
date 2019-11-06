@@ -17,9 +17,9 @@
 
 
 import hashlib
+import logging
 import pickle
 import sys
-import logging
 from os import makedirs
 from os.path import join, exists, split
 from pathlib import Path
@@ -28,6 +28,7 @@ from typing import Iterable
 from .exceptions import StepNotCached
 
 LOG = logging.getLogger('stripping')
+
 
 class CacheStorage:
     return_file_name = "step_return"
@@ -47,10 +48,10 @@ class CacheStorage:
         input_args = list(args) + [i for pair in sorted(kwargs.items(), key=lambda x: x[0]) for i in pair]
         input_args = ",".join([str(i) for i in input_args]).encode()
         loc = Path(join(self.cache_dir,
-                         self.hashed_name,
-                         self.hashed_args,
-                         hashlib.sha1(step_code.encode()).hexdigest(),
-                         hashlib.sha1(input_args).hexdigest()))
+                        self.hashed_name,
+                        self.hashed_args,
+                        hashlib.sha1(step_code.encode()).hexdigest(),
+                        hashlib.sha1(input_args).hexdigest()))
         return loc, loc / 'return', loc / 'context'
 
     def get_step(self, step_name: str, step_code: str, context, *args, **kwargs):
