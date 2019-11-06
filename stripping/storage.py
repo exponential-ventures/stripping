@@ -34,8 +34,9 @@ class CacheStorage:
     return_file_name = "step_return"
     context_file_name = "context"
 
-    def __init__(self, cache_dir: str) -> None:
+    def __init__(self, cache_dir: str,  catalysis_credentials: str = None) -> None:
         self.cache_dir = cache_dir
+        self.catalysis_credentials = catalysis_credentials
         if not exists(self.cache_dir):
             makedirs(self.cache_dir)
 
