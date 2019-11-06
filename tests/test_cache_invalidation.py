@@ -37,10 +37,3 @@ class TestCacheInvalidation(asynctest.TestCase):
             self.cache_invalidation.strategy()
 
         self.assertEqual(0, len(glob(f'{tmp_dir}{os.sep}*')))
-
-
-
-
-
-
-
