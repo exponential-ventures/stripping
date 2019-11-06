@@ -77,10 +77,14 @@ class CacheInvalidation:
     def force_delete(self, cache_dir):
         import shutil
 
+        LOG.info('Attempting to delete {}'.format(cache_dir))
+
         if cache_dir not in self.__cached_dirs:
             pass
 
         shutil.rmtree(cache_dir, ignore_errors=True)
+
+        LOG.info('<!> {} deleted'.format(cache_dir))
 
     def strategy(self):
         """
