@@ -19,6 +19,7 @@
 import hashlib
 import pickle
 import sys
+import logging
 from os import makedirs
 from os.path import join, exists, split
 from pathlib import Path
@@ -26,6 +27,7 @@ from typing import Iterable
 
 from .exceptions import StepNotCached
 
+LOG = logging.getLogger('stripping')
 
 class CacheStorage:
     return_file_name = "step_return"

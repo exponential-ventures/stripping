@@ -21,6 +21,7 @@ import inspect
 from glob import glob
 import os
 import datetime
+import logging
 
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
@@ -28,6 +29,7 @@ from .storage import CacheStorage
 
 ACCESS = 'acess'
 DIR_PATH = 'path'
+LOG = logging.getLogger('stripping')
 
 
 @SingletonDecorator
@@ -42,7 +44,6 @@ class StepCache:
         self.cache_invalidation.add_dir(self.cache_dir)
         asyncio.ensure_future(self.cache_invalidation.strategy_runner())
 
-
     def register_context(self, context):
         self.context = context
 
@@ -50,7 +51,7 @@ class StepCache:
         try:
             return self.storage.get_step(step_fn.name, step_fn.code, self.context, *args, **kwargs)
         except StepNotCached:
-            print(f"Step '{step_fn.name}' is not cached. Executing...")
+            LOG.info(f"Step '{step_fn.name}' is not cached. Executing...")
             step_return = None
 
             if inspect.iscoroutinefunction(step_fn):
@@ -58,14 +59,14 @@ class StepCache:
             else:
                 step_return = step_fn(*args, **kwargs)
 
-            self.storage.save_step(step_fn.code, step_return, self.context, *args, **kwargs)
+            self.storage.save_step(
+                step_fn.code, step_return, self.context, *args, **kwargs)
 
             return step_return
 
 
 @SingletonDecorator
 class CacheInvalidation:
-
 
     def __init__(self):
         self.__cached_dirs = {}
@@ -85,7 +86,7 @@ class CacheInvalidation:
         """
             Removes cached files which haven't being accessed for 1 year or more
         """
-        
+
         one_year_ago_timestamp = datetime.datetime.timestamp(self.year_ago(1))
         for d in self.__cached_dirs.keys():
             for dir_path in glob('{}/*'.format(d)):
@@ -95,12 +96,10 @@ class CacheInvalidation:
                 if self.__cached_dirs[d][ACCESS] <= one_year_ago_timestamp:
                     self.force_delete(self.__cached_dirs[d][DIR_PATH])
 
-
     async def strategy_runner(self):
         while True:
             self.strategy()
             await asyncio.sleep(60)
-
 
     def __last_access(self, path):
         """
@@ -108,8 +107,7 @@ class CacheInvalidation:
         """
         return os.path.getatime(path)
 
-
-    def year_from_now(self, years : int = 1):
+    def year_from_now(self, years: int = 1):
         return datetime.datetime.now() + datetime.timedelta(days=years*365)
 
     def year_ago(self, years: int = 1):
