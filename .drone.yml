@@ -1,0 +1,59 @@
+kind: pipeline
+type: docker
+name: default
+
+steps:
+  - name: build
+    image:  banzaicloud/drone-kaniko
+    settings:
+      dockerfile: docker/Dockerfile
+      registry: k2so.xnv.io
+      repo: stripping
+      tags: latest
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+
+  - name: unit_test
+    image: k2so.xnv.io/stripping:latest
+    commands:
+      - "python -m unittest -v -f tests"
+
+  - name: alert_success
+    image: mike1pol/drone-rocket
+    settings:
+      url: https://xnv.rocket.chat
+      user_id:
+        from_secret: rocket_chat_user_id
+      token:
+        from_secret: rocket_chat_token
+      channel: general
+      message: >
+        *💯🔥 Alert: Build for {{ repo.name }} 💯🔥*
+         Build {{ build.number }} succeeded. Good job!. {{ build.link }}
+    when:
+      status:
+        - success
+
+  - name: alert_fail
+    image: mike1pol/drone-rocket
+    settings:
+      url: https://xnv.rocket.chat
+      user_id:
+        from_secret: rocket_chat_user_id
+      token:
+        from_secret: rocket_chat_token
+      channel: general
+      message: >
+        *💀 Alert: Build for {{ repo.name }} 💀*
+         Build {{ build.number }} failed. Fix me please. {{ build.link }}
+    when:
+      status:
+        - failure
+
+
+image_pull_secrets:
+- dockerconfig
+
+
