@@ -20,8 +20,7 @@ import hashlib
 import logging
 import pickle
 import sys
-from os import makedirs
-from os.path import join, exists, split
+import os
 from pathlib import Path
 from typing import Iterable
 
@@ -37,11 +36,13 @@ class CacheStorage:
     def __init__(self, cache_dir: str,  catalysis_credentials: str = None) -> None:
         self.cache_dir = cache_dir
         self.catalysis_credentials = catalysis_credentials
-        self.catalysis_client = None
-        if not exists(self.cache_dir):
-            makedirs(self.cache_dir)
 
-        self.exec_name = split(sys.argv[0])[1]
+        self.catalysis_client = None
+
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+
+        self.exec_name = os.path.split(sys.argv[0])[1]
         self.hashed_name = hashlib.sha1(self.exec_name.encode()).hexdigest()
         self.exec_args = sorted(sys.argv[1:])
         self.hashed_args = hashlib.sha1(",".join(self.exec_args).encode()).hexdigest()
@@ -49,7 +50,7 @@ class CacheStorage:
     def step_location(self, step_code: str, *args, **kwargs) -> Iterable[Path]:
         input_args = list(args) + [i for pair in sorted(kwargs.items(), key=lambda x: x[0]) for i in pair]
         input_args = ",".join([str(i) for i in input_args]).encode()
-        loc = Path(join(self.cache_dir,
+        loc = Path(os.path.join(self.cache_dir,
                         self.hashed_name,
                         self.hashed_args,
                         hashlib.sha1(step_code.encode()).hexdigest(),
@@ -80,11 +81,11 @@ class CacheStorage:
         location, return_location, context_location = self.step_location(step_code, *args, **kwargs)
 
         if not location.exists():
-            makedirs(location)
+            os.makedirs(location)
         if not return_location.exists():
-            makedirs(return_location)
+            os.makedirs(return_location)
         if not context_location.exists():
-            makedirs(context_location)
+            os.makedirs(context_location)
 
         if step_return is not None:
             with open(return_location / '0', 'wb') as return_file:
