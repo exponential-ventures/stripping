@@ -57,3 +57,7 @@ image_pull_secrets:
 - dockerconfig
 
 
+trigger:
+  branch:
+  - master
+  - develop
