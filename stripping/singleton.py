@@ -30,7 +30,7 @@ class SingletonDecorator:
             self.existing_kwargs = kwargs
             self.instance = self.klass(*args, **kwargs)
 
-        elif self.instance:
+        else:
 
             # If the signature changes then the Singleton changes as well
             if args != self.existing_args or kwargs != self.existing_kwargs:
