@@ -30,9 +30,9 @@ LOG = logging.getLogger('stripping')
 class StepCache:
     context = None
 
-    def __init__(self, cache_dir: str, catalysis_credentials: str = None):
+    def __init__(self, cache_dir: str, catalysis_credential_name: str = ''):
         self.cache_dir = cache_dir
-        self.storage = CacheStorage(self.cache_dir, catalysis_credentials)
+        self.storage = CacheStorage(self.cache_dir, catalysis_credential_name)
 
     def register_context(self, context):
         self.context = context

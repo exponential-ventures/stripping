@@ -91,8 +91,8 @@ class Stripping:
     steps = []
     cache = None
 
-    def __init__(self, cache_dir: str, catalysis_credentials: str = None):
-        self.cache = StepCache(cache_dir, catalysis_credentials)
+    def __init__(self, cache_dir: str, catalysis_credential_name: str = ''):
+        self.cache = StepCache(cache_dir, catalysis_credential_name)
 
     def step(self, step_fn):
         async def wrapper(*args, **kwargs):

@@ -29,7 +29,7 @@ def setup_stripping(cache_dir: str):
     return st, c
 
 
-def setup_stripping_with_catalysis(cache_dir: str, catalysis_credentials: str):
-    st, c = Stripping(cache_dir, catalysis_credentials), Context()
+def setup_stripping_with_catalysis(cache_dir: str, catalysis_credential_name: str):
+    st, c = Stripping(cache_dir, catalysis_credential_name), Context()
     st.cache.register_context(c)
     return st, c
