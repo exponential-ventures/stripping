@@ -18,11 +18,13 @@
 
 import hashlib
 import logging
+import os
 import pickle
 import sys
-import os
 from pathlib import Path
 from typing import Iterable
+
+from catalysis.storage import StorageClient
 
 from .exceptions import StepNotCached
 
@@ -33,11 +35,13 @@ class CacheStorage:
     return_file_name = "step_return"
     context_file_name = "context"
 
-    def __init__(self, cache_dir: str,  catalysis_credentials: str = None) -> None:
+    def __init__(self, cache_dir: str, catalysis_credential_name: str = '') -> None:
         self.cache_dir = cache_dir
-        self.catalysis_credentials = catalysis_credentials
 
-        self.catalysis_client = None
+        if catalysis_credential_name != '':
+            self.catalysis_client = StorageClient(catalysis_credential_name)
+        else:
+            self.catalysis_client = None
 
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
@@ -51,10 +55,10 @@ class CacheStorage:
         input_args = list(args) + [i for pair in sorted(kwargs.items(), key=lambda x: x[0]) for i in pair]
         input_args = ",".join([str(i) for i in input_args]).encode()
         loc = Path(os.path.join(self.cache_dir,
-                        self.hashed_name,
-                        self.hashed_args,
-                        hashlib.sha1(step_code.encode()).hexdigest(),
-                        hashlib.sha1(input_args).hexdigest()))
+                                self.hashed_name,
+                                self.hashed_args,
+                                hashlib.sha1(step_code.encode()).hexdigest(),
+                                hashlib.sha1(input_args).hexdigest()))
         return loc, loc / 'return', loc / 'context'
 
     def get_step(self, step_name: str, step_code: str, context, *args, **kwargs):
