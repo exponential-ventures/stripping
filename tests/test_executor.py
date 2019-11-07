@@ -33,7 +33,7 @@ class TestExecutor(asynctest.TestCase):
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
     def test_step_decorator(self):
-        @self.st.step
+        @self.st.step(skip_cache=False)
         def test_cache():
             pass
 
