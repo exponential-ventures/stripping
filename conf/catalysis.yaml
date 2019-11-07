@@ -1,0 +1,69 @@
+
+# Configuration for client lib
+
+catalysis:
+  # Interval to use while checking latency between client and connected proxies
+  ping_interval: 60
+
+  # Number of seconds to wait for a connection before earring out
+  timeout: 5
+
+  # Maximum number of connections to proxies that can be maintained at any moment
+  max_proxy_connections: 5
+
+  # Chunk size in Bytes representing how much data Catalysis should try to pull from proxy
+  # and load into memory at a time.
+  chunk_size: 1024
+
+# List of known proxies to initially attempt to connect to. The default it to connect
+# to the local proxy.
+proxies:
+  - wss://server:6745
+
+
+# A client can use any number of named credentials, with any number of drivers needed.
+# Just make sure to give each credential set a unique name, and meet all requirements
+# specifying the correct fields for each storage type.
+credentials:
+  # Please note that using local here will NOT bypass the proxy. Local means that the
+  # proxy should try to access the file in his local storage on the specified path.
+  local:
+    driver: local
+    path: /tmp/list/
+
+  ftp_server:
+    driver: ftp
+    hostname: ftp_server
+    port: 21
+    username: amalgam
+    password: test
+
+  sftp_server:
+    driver: sftp
+    hostname: sftp_server
+    port: 22
+    username: amalgam
+    password: test
+    mount_point: /datasets
+    key_file: /home/user/.ssh/id_rsa
+
+  s3_aws:
+    driver: s3
+    aws_bucket_name: my_bucket_name
+    aws_access_key_id: 8w7iashfdlkasdflkahf
+    aws_secret_access_key: kljhsdflagfikskh4398yrewrfblkasdbnc
+    aws_session_token: 8w7iashfdlkasdflkahf00000
+
+  nfs_server:
+    driver: nfs
+    url: nfs://amalgam_nfs/nfsshare
+
+
+# Under this section you can define a list of files that should be prefetched upon
+# an import of the catalysis lib. If you use this feature, no extra coding is needed to
+# setup a file for retrieval and use.
+#prefetch:
+#  credential_name:
+#    - path1
+#    - path2
+#    - path3
