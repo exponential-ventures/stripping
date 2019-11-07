@@ -14,16 +14,15 @@
 ## If you do not have a written authorization to read this code
 ## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
-
+import os
 import shutil
-from os.path import split, join
 
 import asynctest
 
 from stripping import setup_stripping
 from stripping.cache import StepCache
 
-tmp_dir = join(split(__file__)[0], '.test_cache')
+tmp_dir = os.path.join(os.path.split(__file__)[0], '.test_cache')
 
 st, context = setup_stripping(tmp_dir)
 
@@ -35,10 +34,13 @@ def test_step():
 
 class TestCache(asynctest.TestCase):
     def setUp(self):
-        self.step_cache = StepCache()
+        self.step_cache = StepCache(tmp_dir)
 
     def tearDown(self):
         shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    def test_cache_dir_creation(self):
+        self.assertTrue(os.path.isdir(tmp_dir))
 
     async def test_execute_or_retrieve(self):
         self.step_cache.register_context(context)

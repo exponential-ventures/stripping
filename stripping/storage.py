@@ -43,7 +43,9 @@ class CacheStorage:
         else:
             self.catalysis_client = None
 
-        if not os.path.exists(self.cache_dir):
+        # Only create cache_dir if we don't have a catalysis client, otherwise the driver already takes
+        # care of creating our directories whenever we write to a file with non-existent path.
+        if self.catalysis_client is None and not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
 
         self.exec_name = os.path.split(sys.argv[0])[1]
