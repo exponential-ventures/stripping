@@ -59,7 +59,7 @@ class StepCache:
             else:
                 step_return = step_fn(*args, **kwargs)
 
-            if not step_fn.skip_cache:
+            if not step_fn.skip_cache or not os.environ.get("STRIPPING_SKIP_CACHE", False):
                 self.storage.save_step(step_fn.code, step_return, self.context, *args, **kwargs)
 
             return step_return
@@ -131,3 +131,4 @@ class CacheInvalidation:
         total = stats.f_frsize * stats.f_blocks
         free = stats.f_frsize * stats.f_bavail
         return (free / total) * 100
+
