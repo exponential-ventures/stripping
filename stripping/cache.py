@@ -37,9 +37,9 @@ LOG = logging.getLogger('stripping')
 class StepCache:
     context = None
 
-    def __init__(self, cache_dir):
+    def __init__(self, cache_dir: str, catalysis_credential_name: str = ''):
         self.cache_dir = cache_dir
-        self.storage = CacheStorage(self.cache_dir)
+        self.storage = CacheStorage(self.cache_dir, catalysis_credential_name)
 
         self.cache_invalidation = CacheInvalidation()
         self.cache_invalidation.add_dir(self.cache_dir)
@@ -53,7 +53,6 @@ class StepCache:
             return self.storage.get_step(step_fn.name, step_fn.code, self.context, *args, **kwargs)
         except StepNotCached:
             LOG.info(f"Step '{step_fn.name}' is not cached. Executing...")
-            step_return = None
 
             if inspect.iscoroutinefunction(step_fn):
                 step_return = await step_fn(*args, **kwargs)
@@ -104,11 +103,10 @@ class CacheInvalidation:
                     self.force_delete(self.__cached_dirs[d][dir_path])
 
             if self.percentage_disk_free_space() < 15.00:
-               if len(self.__cached_dirs[d]) > 0:
-                   # sort the list by least access
-                   sorted_cache_list = sorted(self.__cached_dirs[d].items(), key=lambda x: x[1][ACCESS])
-                   self.force_delete(sorted_cache_list[0][0])
-
+                if len(self.__cached_dirs[d]) > 0:
+                    # sort the list by least access
+                    sorted_cache_list = sorted(self.__cached_dirs[d].items(), key=lambda x: x[1][ACCESS])
+                    self.force_delete(sorted_cache_list[0][0])
 
     async def strategy_runner(self):
         while True:
@@ -122,13 +120,13 @@ class CacheInvalidation:
         return os.path.getatime(path)
 
     def year_from_now(self, years: int = 1):
-        return datetime.datetime.now() + datetime.timedelta(days=years*365)
+        return datetime.datetime.now() + datetime.timedelta(days=years * 365)
 
     def year_ago(self, years: int = 1):
-        return datetime.datetime.now() - datetime.timedelta(days=years*365)
+        return datetime.datetime.now() - datetime.timedelta(days=years * 365)
 
     def percentage_disk_free_space(self):
         stats = os.statvfs('/')
         total = stats.f_frsize * stats.f_blocks
         free = stats.f_frsize * stats.f_bavail
-        return (free/total) * 100
+        return (free / total) * 100

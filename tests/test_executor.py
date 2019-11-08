@@ -15,19 +15,20 @@
 ## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
 
-import asynctest
 import shutil
 from os.path import split, join
 
+import asynctest
+
 from stripping.executor import Stripping
-from stripping.cache import StepCache
 
 tmp_dir = join(split(__file__)[0], '.test_cache')
+
 
 class TestExecutor(asynctest.TestCase):
     def setUp(self):
         self.st = Stripping(tmp_dir)
-        self.st.steps = [] # To guarantee no cache from another tests
+        self.st.steps = []  # To guarantee no cache from another tests
 
     def tearDown(self):
         shutil.rmtree(tmp_dir, ignore_errors=True)
