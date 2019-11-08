@@ -20,9 +20,10 @@ import asyncio
 import inspect
 from glob import glob
 import os
+import sys
 import datetime
 import logging
-from collections import defaultdict
+import shutil
 
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
@@ -43,6 +44,15 @@ class StepCache:
 
         self.cache_invalidation = CacheInvalidation()
         self.cache_invalidation.add_dir(self.cache_dir)
+
+        if '-clean' in sys.argv:
+            for item in glob('{}/*'.format(cache_dir)):
+                if os.path.isfile(item):
+                    os.remove(item)
+                else:
+                    shutil.rmtree(cache_dir, ignore_errors=True)
+
+
         asyncio.ensure_future(self.cache_invalidation.strategy_runner())
 
     def register_context(self, context):
@@ -59,7 +69,8 @@ class StepCache:
             else:
                 step_return = step_fn(*args, **kwargs)
 
-            self.storage.save_step(step_fn.code, step_return, self.context, *args, **kwargs)
+            if not step_fn.skip_cache or not os.environ.get("STRIPPING_SKIP_CACHE", False):
+                self.storage.save_step(step_fn.code, step_return, self.context, *args, **kwargs)
 
             return step_return
 
@@ -74,21 +85,19 @@ class CacheInvalidation:
         self.__cached_dirs[cache_dir] = {}
 
     def force_delete(self, cache_dir):
-        import shutil
-
         LOG.info('Attempting to delete {}'.format(cache_dir))
 
-        if cache_dir not in self.__cached_dirs:
-            pass
-
         shutil.rmtree(cache_dir, ignore_errors=True)
+
+        if cache_dir in self.__cached_dirs:
+            del(self.__cached_dirs[cache_dir])
 
         LOG.info('<!> {} deleted'.format(cache_dir))
 
     def strategy(self):
         """
             A Cache is deleted when:
-                - it haven't being accessed for 3 months or more.
+                - it haven't being accessed for 4 months or more.
                 - free disk space reaches <= 15%
         """
 
@@ -100,7 +109,7 @@ class CacheInvalidation:
                 self.__cached_dirs[d][dir_path] = {}
                 self.__cached_dirs[d][dir_path][ACCESS] = self.__last_access(dir_path)
                 if self.__cached_dirs[d][dir_path][ACCESS] <= three_months_ago_timestamp:
-                    self.force_delete(self.__cached_dirs[d][dir_path])
+                    self.force_delete(dir_path)
 
             if self.percentage_disk_free_space() < 15.00:
                 if len(self.__cached_dirs[d]) > 0:
@@ -130,3 +139,4 @@ class CacheInvalidation:
         total = stats.f_frsize * stats.f_blocks
         free = stats.f_frsize * stats.f_bavail
         return (free / total) * 100
+

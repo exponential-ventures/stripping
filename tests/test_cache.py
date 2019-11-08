@@ -27,11 +27,9 @@ tmp_dir = f"/tmp/{str(uuid.uuid4())}/cache/"
 
 st, context = setup_stripping(tmp_dir)
 
-
 @st.step
 def test_step():
     return 'Hello'
-
 
 class TestCache(asynctest.TestCase):
     def setUp(self):

@@ -143,21 +143,34 @@ class Stripping:
     def __init__(self, cache_dir: str, catalysis_credential_name: str = ''):
         self.cache = StepCache(cache_dir, catalysis_credential_name)
 
-    def step(self, step_fn):
-        async def wrapper(*args, **kwargs):
+    def step(self, *args, **kwargs):
+        step_fn = None
 
-            if inspect.iscoroutinefunction(step_fn):
-                result = await step_fn(*args, **kwargs)
-            else:
-                result = step_fn(*args, **kwargs)
+        if len(args) == 1 and callable(args[0]):
+            step_fn = args[0]
 
-            return result
+        skip_cache = kwargs.get('skip_cache', False)
 
-        wrapper.code = inspect.getsource(step_fn)
-        wrapper.name = step_fn.__name__
-        self.steps.append(wrapper)
 
-        return wrapper
+        def step_decorator(step_fn):
+            async def wrapper(*args, **kwargs):
+                result = None
+
+                if inspect.iscoroutinefunction(step_fn):
+                    result = await step_fn(*args, **kwargs)
+                else:
+                    result = step_fn(*args, **kwargs)
+
+                return result
+
+            wrapper.code = inspect.getsource(step_fn)
+            wrapper.name = step_fn.__name__
+            wrapper.skip_cache = skip_cache
+            self.steps.append(wrapper)
+
+            return wrapper
+
+        return step_decorator(step_fn) if step_fn else step_decorator
 
     def execute(self):
         asyncio.get_event_loop().run_until_complete(self._execute())
