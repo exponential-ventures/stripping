@@ -14,31 +14,32 @@
 ## If you do not have a written authorization to read this code
 ## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
+import os
+import shutil
+import uuid
 
 import asynctest
-from os.path import split, join
-import shutil
 
-from stripping.cache import StepCache
-from stripping.executor import Context
 from stripping import setup_stripping
+from stripping.cache import StepCache
 
-tmp_dir = join(split(__file__)[0], '.test_cache')
+tmp_dir = f"/tmp/{str(uuid.uuid4())}/cache/"
 
 st, context = setup_stripping(tmp_dir)
 
-
 @st.step()
 def test_step():
-   return 'Hello'
-
+    return 'Hello'
 
 class TestCache(asynctest.TestCase):
     def setUp(self):
-        self.step_cache = StepCache()
+        self.step_cache = StepCache(tmp_dir)
 
     def tearDown(self):
         shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    def test_cache_dir_creation(self):
+        self.assertTrue(os.path.isdir(tmp_dir))
 
     async def test_execute_or_retrieve(self):
         self.step_cache.register_context(context)

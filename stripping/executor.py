@@ -32,11 +32,17 @@ LOG = logging.getLogger('stripping')
 
 @SingletonDecorator
 class Context:
+    __context_location = None
+    catalysis_client = None
+
     def __init__(self):
         self.__context_location = None
 
     def register_context_location(self, context_location):
         self.__context_location = context_location
+
+    def register_catalysis_client(self, client):
+        self.catalysis_client = client
 
     def __getattr__(self, attr_name):
         attr_file_name = join(self.__context_location, attr_name)
@@ -90,8 +96,8 @@ class Stripping:
     steps = []
     cache = None
 
-    def __init__(self, cache_dir):
-        self.cache = StepCache(cache_dir)
+    def __init__(self, cache_dir, catalysis_credential_name: str = ''):
+        self.cache = StepCache(cache_dir, catalysis_credential_name)
 
     def step(self, skip_cache: bool = False):
         def step_decorator(step_fn):

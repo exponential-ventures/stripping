@@ -16,19 +16,14 @@
 ##
 
 
-
 import logging
-
 from os.path import split, join
 
 import pandas as pd
-
-from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
-
-from os.path import split, join
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 from stripping import setup_stripping
 

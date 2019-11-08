@@ -1,8 +1,13 @@
 build:
-	docker build --no-cache --network=host -f docker/Dockerfile -t stripping .
+	docker build -f docker/Dockerfile -t stripping .
 
 test:
 	docker run -it --rm stripping python -m unittest -v -f tests
+
+# Run specific tests by calling like such:
+# make test_name=tests.test_cache_with_catalysis unit-test
+unit-test:
+	docker run -it --rm stripping python  -m unittest -v $(test_name)
 
 build-example:
 	docker build  -f docker/example/Dockerfile -t stripping-example .

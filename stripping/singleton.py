@@ -19,9 +19,23 @@
 class SingletonDecorator:
     def __init__(self, klass):
         self.klass = klass
+        self.existing_args = None
+        self.existing_kwargs = None
         self.instance = None
-    
-    def __call__(self,*args,**kwds):
-        if self.instance == None:
-            self.instance = self.klass(*args,**kwds)
+
+    def __call__(self, *args, **kwargs):
+
+        if self.instance is None:
+            self.existing_args = args
+            self.existing_kwargs = kwargs
+            self.instance = self.klass(*args, **kwargs)
+
+        else:
+
+            # If the signature changes then the Singleton changes as well
+            if args != self.existing_args or kwargs != self.existing_kwargs:
+                self.existing_args = args
+                self.existing_kwargs = kwargs
+                self.instance = self.klass(*args, **kwargs)
+
         return self.instance
