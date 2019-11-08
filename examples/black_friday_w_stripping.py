@@ -31,21 +31,21 @@ st, c = setup_stripping(join(split(__file__)[0], '.stripping'))
 logging.basicConfig(level=logging.DEBUG)
 
 
-@st.step
+@st.step()
 def load_dataset():
     c.bf_file = join(split(__file__)[0], "datasets", "black_friday.csv")
     logging.info(f"Processing file '{c.bf_file}' without using the Catalysis acceleration framework.")
     c.bf = pd.read_csv(c.bf_file)
 
 
-@st.step
+@st.step()
 def split_dataset():
     c.X = c.bf.iloc[:, 0:6].values
     c.y = c.bf.iloc[:, 9].values
     c.X_train, c.X_test, c.y_train, c.y_test = train_test_split(c.X, c.y, test_size=0.15, random_state=0)
 
 
-@st.step
+@st.step()
 def encode_labels():
     #################################
     # Encoding non-numerical columns
@@ -62,7 +62,7 @@ def encode_labels():
     c.X_test[:, 4] = c.x_test_encoder.fit_transform(c.X_test[:, 4])
 
 
-@st.step
+@st.step()
 def scale_values():
     ######################
     # Scaling all columns
@@ -73,7 +73,7 @@ def scale_values():
     c.X_test = c.X_test_scaler.fit_transform(c.X_test)
 
 
-@st.step
+@st.step()
 def train_model():
     #################################
     # Training and error measurement
@@ -81,7 +81,7 @@ def train_model():
     c.regressor.fit(c.X_train, c.y_train)
 
 
-@st.step
+@st.step()
 def measure_error():
     c.y_pred = c.regressor.predict(c.X_test)
     c.error = mean_absolute_error(c.y_test, c.y_pred)

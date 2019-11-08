@@ -20,9 +20,10 @@ import asyncio
 import inspect
 from glob import glob
 import os
+import sys
 import datetime
 import logging
-from collections import defaultdict
+import shutil
 
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
@@ -43,6 +44,15 @@ class StepCache:
 
         self.cache_invalidation = CacheInvalidation()
         self.cache_invalidation.add_dir(self.cache_dir)
+
+        if '-clean' in sys.argv:
+            for item in glob('{}/*'.format(cache_dir)):
+                if os.path.isfile(item):
+                    os.remove(item)
+                else:
+                    shutil.rmtree(cache_dir, ignore_errors=True)
+
+
         asyncio.ensure_future(self.cache_invalidation.strategy_runner())
 
     def register_context(self, context):
@@ -75,8 +85,6 @@ class CacheInvalidation:
         self.__cached_dirs[cache_dir] = {}
 
     def force_delete(self, cache_dir):
-        import shutil
-
         LOG.info('Attempting to delete {}'.format(cache_dir))
 
         shutil.rmtree(cache_dir, ignore_errors=True)
@@ -89,7 +97,7 @@ class CacheInvalidation:
     def strategy(self):
         """
             A Cache is deleted when:
-                - it haven't being accessed for 3 months or more.
+                - it haven't being accessed for 4 months or more.
                 - free disk space reaches <= 15%
         """
 
