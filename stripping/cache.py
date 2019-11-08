@@ -79,13 +79,10 @@ class CacheInvalidation:
 
         LOG.info('Attempting to delete {}'.format(cache_dir))
 
-        aux = self.__cached_dirs
-
+        shutil.rmtree(cache_dir, ignore_errors=True)
 
         if cache_dir in self.__cached_dirs:
-            pass
-
-        shutil.rmtree(cache_dir, ignore_errors=True)
+            del(self.__cached_dirs[cache_dir])
 
         LOG.info('<!> {} deleted'.format(cache_dir))
 
