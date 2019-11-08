@@ -18,3 +18,4 @@
 from .test_cache import TestCache
 from .test_storage import TestStorage
 from .test_executor import TestExecutor
+from .test_cache_invalidation import TestCacheInvalidation
