@@ -42,7 +42,6 @@ class StepCache:
             return self.storage.get_step(step_fn.name, step_fn.code, self.context, *args, **kwargs)
         except StepNotCached:
             LOG.info(f"Step '{step_fn.name}' is not cached. Executing...")
-            step_return = None
 
             if inspect.iscoroutinefunction(step_fn):
                 step_return = await step_fn(*args, **kwargs)

@@ -16,13 +16,14 @@
 ##
 import os
 import shutil
+import uuid
 
 import asynctest
 
 from stripping import setup_stripping
 from stripping.cache import StepCache
 
-tmp_dir = os.path.join(os.path.split(__file__)[0], '.test_cache')
+tmp_dir = f"/tmp/{str(uuid.uuid4())}/cache/"
 
 st, context = setup_stripping(tmp_dir)
 

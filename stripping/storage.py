@@ -14,14 +14,14 @@
 ## If you do not have a written authorization to read this code
 ## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
-
-
+import asyncio
 import hashlib
 import logging
 import os
 import pickle
 import sys
 from pathlib import Path
+from tempfile import TemporaryFile
 from typing import Iterable
 
 from catalysis.storage import StorageClient
@@ -67,35 +67,66 @@ class CacheStorage:
         location, return_location, context_location = self.step_location(step_code, *args, **kwargs)
         return_file_name = return_location / '0'
 
-        if location.exists():
-            if context_location.exists():
-                context.register_context_location(context_location)
+        if self.catalysis_client is not None:
+            with self.catalysis_client.open(location) as c_local:
+                if c_local.exists():
 
-            if return_file_name.exists():
-                with open(return_file_name, 'rb') as return_file:
-                    try:
-                        return pickle.load(return_file)
-                    except EOFError:
-                        # Step returned None, which can't be properly pickled.
-                        return None
+                    with self.catalysis_client.open(context_location) as c_context:
+                        if c_context.exists():
+                            context.register_context_location(context_location)
 
-            return None
+                    with self.catalysis_client.open(return_file_name, 'rb') as c_return:
+                        if c_return.exists():
+                            try:
+                                outfile = TemporaryFile()
+                                outfile.write(c_return.read())
+
+                                return pickle.load(outfile)
+                            except EOFError:
+                                # Step returned None, which can't be properly pickled.
+                                return None
+
+                    return None
+        else:
+            if location.exists():
+                if context_location.exists():
+                    context.register_context_location(context_location)
+
+                if return_file_name.exists():
+                    with open(return_file_name, 'rb') as return_file:
+                        try:
+                            return pickle.load(return_file)
+                        except EOFError:
+                            # Step returned None, which can't be properly pickled.
+                            return None
+
+                return None
 
         raise StepNotCached(f"The step '{step_name}' is not yet cached.")
 
     def save_step(self, step_code: str, step_return, context, *args, **kwargs) -> None:
+
         location, return_location, context_location = self.step_location(step_code, *args, **kwargs)
 
-        if not location.exists():
-            os.makedirs(location)
-        if not return_location.exists():
-            os.makedirs(return_location)
-        if not context_location.exists():
-            os.makedirs(context_location)
+        # Only create dirs if we don't have a catalysis client, otherwise the driver already takes
+        # care of creating our directories whenever we write to a file with non-existent path.
+        if self.catalysis_client is None:
+            if not location.exists():
+                os.makedirs(location)
+            if not return_location.exists():
+                os.makedirs(return_location)
+            if not context_location.exists():
+                os.makedirs(context_location)
 
         if step_return is not None:
-            with open(return_location / '0', 'wb') as return_file:
-                pickle.dump(step_return, return_file)
+
+            if self.catalysis_client is not None:
+                with self.catalysis_client.open(return_location / '0', mode='wb+') as f:
+                    asyncio.create_task(f.write(pickle.dumps(step_return)))
+            else:
+                with open(return_location / '0', 'wb') as return_file:
+                    pickle.dump(step_return, return_file)
 
         context.register_context_location(context_location)
+        context.register_catalysis_client(self.catalysis_client)
         context.serialize()
