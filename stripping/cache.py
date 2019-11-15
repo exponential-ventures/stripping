@@ -73,6 +73,18 @@ class StepCache:
 
             return step_return
 
+    async def execute_or_retrieve_chained_steps(self, chained_steps):
+
+        result = None
+
+        for step in chained_steps:
+            if result:
+                result = await self.execute_or_retrieve(step, result)
+            else:
+                result = await self.execute_or_retrieve(step)
+
+        return result
+
 
 @SingletonDecorator
 class CacheInvalidation:
@@ -130,7 +142,7 @@ class CacheInvalidation:
     def year_from_now(self, years: int = 1):
         return datetime.datetime.now() + datetime.timedelta(days=years * 365)
 
-    def year_ago(self, years: int = 1):
+    def year_ago(self, years: float = 1):
         return datetime.datetime.now() - datetime.timedelta(days=years * 365)
 
     def percentage_disk_free_space(self):
