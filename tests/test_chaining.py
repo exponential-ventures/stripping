@@ -13,13 +13,13 @@ def test_chain_step_1():
     return 'Hello'
 
 
-@st.chain
-def test_chain_step_2(prefix: str):
-    return prefix + ' World'
+# @st.chain
+# def test_chain_step_2(prefix: str):
+#     return prefix + ' World'
 
 
 class ChainingTestCase(TestCase):
 
     def test_chain(self):
-        r = st.execute_chain()
+        r = st.execute()
         self.assertEqual('Hello World', r)

@@ -22,7 +22,6 @@ import logging
 import os
 import pickle
 from tempfile import TemporaryFile
-from typing import Callable
 
 import numpy as np
 from catalysis.storage import StorageClient
@@ -139,7 +138,6 @@ class Context:
 @SingletonDecorator
 class Stripping:
     steps = list()
-    chained_steps = list()
     cache = None
 
     def __init__(self, cache_dir: str, catalysis_credential_name: str = ''):
@@ -173,76 +171,79 @@ class Stripping:
 
         return step_decorator(step_fn) if step_fn else step_decorator
 
-    def chain(self, *args, **kwargs):
-
-        step_fn = None
-
-        if len(args) == 1 and callable(args[0]):
-            step_fn = args[0]
-
-        skip_cache = kwargs.get('skip_cache', False)
-
-        if len(self.chained_steps) > 0:
-            last_step = self.chained_steps[-1]
-        else:
-            last_step = None
-
-        def chain_decorator(fn: Callable):
-
-            async def wrapper(*args, **kwargs):
-
-                if last_step is not None:
-                    if inspect.iscoroutinefunction(last_step):
-                        previous_result = await last_step()
-                    else:
-                        previous_result = last_step()
-                else:
-                    previous_result = None
-
-                if inspect.iscoroutinefunction(fn):
-
-                    if previous_result is not None:
-                        result = await step_fn(previous_result)
-                    else:
-                        result = await step_fn(*args, **kwargs)
-
-                else:
-
-                    if previous_result is not None:
-                        result = step_fn(previous_result)
-                    else:
-                        result = step_fn(*args, **kwargs)
-
-                return result
-
-            wrapper.code = inspect.getsource(step_fn)
-            wrapper.name = step_fn.__name__
-            wrapper.skip_cache = skip_cache
-
-            if args is not None:
-                wrapper.has_args = True
-            else:
-                wrapper.has_args = False
-
-            if kwargs is not None:
-                wrapper.has_kwargs = True
-            else:
-                wrapper.has_kwargs = False
-
-            self.chained_steps.append(wrapper)
-
-        return chain_decorator(step_fn) if step_fn else chain_decorator
-
     def execute(self):
         return asyncio.get_event_loop().run_until_complete(self._execute())
 
-    def execute_chain(self):
-        return asyncio.get_event_loop().run_until_complete(self._execute_chain())
-
     async def _execute(self):
-        for i in range(len(self.steps)):
-            return await self.cache.execute_or_retrieve(self.steps[i])
 
-    async def _execute_chain(self):
+        result = None
+
         for i in range(len(self.steps)):
-            return await self.cache.execute_or_retrieve_chained_steps(self.chained_steps)
+            result = await self.cache.execute_or_retrieve(self.steps[i])
+
+        return result
+
+    # def step(self, *args, **kwargs):
+    #     step_fn = None
+    #
+    #     if len(args) == 1 and callable(args[0]):
+    #         step_fn = args[0]
+    #
+    #     skip_cache = kwargs.get('skip_cache', False)
+    #     chain = kwargs.get('chain', False)
+    #
+    #     def step_decorator(step_fn: Callable):
+    #
+    #         async def wrapper(*args, **kwargs):
+    #
+    #             previous_result = None
+    #
+    #             if chain and len(self.chained_steps) > 0:
+    #
+    #                 last_step = self.chained_steps[-1]
+    #
+    #                 if inspect.iscoroutinefunction(last_step):
+    #                     previous_result = await last_step()
+    #                 else:
+    #                     previous_result = last_step()
+    #
+    #             if inspect.iscoroutinefunction(step_fn):
+    #
+    #                 if previous_result is not None:
+    #                     result = await step_fn(previous_result)
+    #                 else:
+    #                     result = await step_fn(*args, **kwargs)
+    #
+    #             else:
+    #
+    #                 if previous_result is not None:
+    #                     result = step_fn(previous_result)
+    #                 else:
+    #                     result = step_fn(*args, **kwargs)
+    #             logging.debug(f"Result is: {result}")
+    #             return result
+    #
+    #         wrapper.code = inspect.getsource(step_fn)
+    #         wrapper.name = step_fn.__name__
+    #         wrapper.skip_cache = skip_cache
+    #         wrapper.chain = chain
+    #         self.steps.append(wrapper)
+    #
+    #         return wrapper
+    #
+    #     return step_decorator(step_fn) if step_fn else step_decorator
+
+    def chain(self, *args, **kwargs):
+        kwargs.update({"chain": True})
+        self.step(*args, **kwargs)
+
+    @property
+    def chained_steps(self):
+        _chained_steps = list()
+        for step in self.steps:
+            if step.chain:
+                _chained_steps.append(step)
+
+        return _chained_steps
+
+
