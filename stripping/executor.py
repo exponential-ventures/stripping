@@ -213,7 +213,7 @@ class Stripping:
 
         for i, step in enumerate(self.chain):
             if step.name == current_step.__name__:
-                breakpoint()
+
                 if i-1 >= 0:
                     previous_step = self.chain[i - 1]
                     return previous_step
