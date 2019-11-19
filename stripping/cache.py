@@ -17,13 +17,13 @@
 ##
 
 import asyncio
-import inspect
-from glob import glob
-import os
-import sys
 import datetime
+import inspect
 import logging
+import os
 import shutil
+import sys
+from glob import glob
 
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
@@ -32,7 +32,7 @@ from catalysis.storage.storage_client import StorageClient
 
 ACCESS = 'access'
 DIR_PATH = 'path'
-LOG = logging.getLogger('stripping')
+logging = logging.getLogger('stripping')
 
 
 @SingletonDecorator
@@ -53,7 +53,7 @@ class StepCache:
                 else:
                     shutil.rmtree(cache_dir, ignore_errors=True)
 
-        asyncio.ensure_future(self.cache_invalidation.strategy_runner())
+        # asyncio.ensure_future(self.cache_invalidation.strategy_runner())
 
     def register_context(self, context):
         self.context = context
@@ -62,7 +62,7 @@ class StepCache:
         try:
             return self.storage.get_step(step_fn.name, step_fn.code, self.context, *args, **kwargs)
         except StepNotCached:
-            LOG.info(f"Step '{step_fn.name}' is not cached. Executing...")
+            logging.info(f"Step '{step_fn.name}' is not cached. Executing...")
 
             if inspect.iscoroutinefunction(step_fn):
                 step_return = await step_fn(*args, **kwargs)
@@ -90,19 +90,19 @@ class CacheInvalidation:
         self.__cached_dirs[cache_dir] = {}
 
     async def force_delete(self, cache_dir):
-        LOG.info('Attempting to delete {}'.format(cache_dir))
+        logging.info('Attempting to delete {}'.format(cache_dir))
 
-        shutil.rmtree(cache_dir, ignore_errors=True)
+        if self.catalysis_client:
+            with self.catalysis_client.open(cache_dir) as remote:
+                await remote.delete()
+                logging.info('<!> {} deleted'.format(cache_dir))
+        else:
+            shutil.rmtree(cache_dir, ignore_errors=True)
+            logging.info('<!> {} deleted'.format(cache_dir))
 
         if cache_dir in self.__cached_dirs:
-            if self.catalysis_client:
-                with self.catalysis_client.open(cache_dir) as remote:
-                    await remote.delete()
+            del(self.__cached_dirs[cache_dir])
 
-            else:
-                del(self.__cached_dirs[cache_dir])
-
-        LOG.info('<!> {} deleted'.format(cache_dir))
 
     async def strategy(self):
         """
@@ -146,7 +146,7 @@ class CacheInvalidation:
     def year_from_now(self, years: int = 1):
         return datetime.datetime.now() + datetime.timedelta(days=years * 365)
 
-    def year_ago(self, years: int = 1):
+    def year_ago(self, years: float = 1):
         return datetime.datetime.now() - datetime.timedelta(days=years * 365)
 
     async def percentage_disk_free_space(self):
@@ -158,3 +158,4 @@ class CacheInvalidation:
             total = stats.f_frsize * stats.f_blocks
             free = stats.f_frsize * stats.f_bavail
             return (free / total) * 100
+

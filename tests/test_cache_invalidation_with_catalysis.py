@@ -16,6 +16,7 @@ tmp_dir = join(split(__file__)[0], '.test_cache')
 
 st, context = setup_stripping(tmp_dir)
 
+
 class TestCacheInvalidationWithCatalysis(asynctest.TestCase):
 
     @classmethod

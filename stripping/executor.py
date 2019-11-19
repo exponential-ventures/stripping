@@ -137,7 +137,8 @@ class Context:
 
 @SingletonDecorator
 class Stripping:
-    steps = []
+    steps = list()
+    chain_steps = list()
     cache = None
 
     def __init__(self, cache_dir: str, catalysis_credential_name: str = ''):
@@ -150,31 +151,73 @@ class Stripping:
             step_fn = args[0]
 
         skip_cache = kwargs.get('skip_cache', False)
-
+        chain = kwargs.get('chain', False)
 
         def step_decorator(step_fn):
             async def wrapper(*args, **kwargs):
-                result = None
+
+                previous_result = None
+
+                if self.get_chained_step(step_fn) is not None:
+
+                    last_step = self.get_chained_step(step_fn)
+
+                    if inspect.iscoroutinefunction(last_step):
+                        previous_result = await last_step()
+                    else:
+                        previous_result = last_step()
 
                 if inspect.iscoroutinefunction(step_fn):
-                    result = await step_fn(*args, **kwargs)
-                else:
-                    result = step_fn(*args, **kwargs)
 
-                return result
+                    if chain and previous_result is not None:
+                        result = await step_fn(previous_result)
+                    else:
+                        result = await step_fn(*args, **kwargs)
+
+                else:
+
+                    if chain and previous_result is not None:
+                        result = step_fn(previous_result)
+                    else:
+                        result = step_fn(*args, **kwargs)
+
+                return result or previous_result
 
             wrapper.code = inspect.getsource(step_fn)
             wrapper.name = step_fn.__name__
             wrapper.skip_cache = skip_cache
+            wrapper.chain = chain
             self.steps.append(wrapper)
+            if chain:
+                self.chain_steps.append(wrapper)
 
             return wrapper
 
         return step_decorator(step_fn) if step_fn else step_decorator
 
+    def chain(self, *args, **kwargs):
+        kwargs.update({"chain": True})
+        return self.step(*args, **kwargs)
+
     def execute(self):
-        asyncio.get_event_loop().run_until_complete(self._execute())
+        return asyncio.get_event_loop().run_until_complete(self._execute())
 
     async def _execute(self):
+
+        result = None
+
         for i in range(len(self.steps)):
-            await self.cache.execute_or_retrieve(self.steps[i])
+            result = await self.cache.execute_or_retrieve(self.steps[i])
+
+        return result
+
+    def get_chained_step(self, current_step):
+
+        for i, step in enumerate(self.chain_steps):
+            if step.name == current_step.__name__:
+
+                if i - 1 >= 0:
+                    previous_step = self.chain_steps[i - 1]
+                    return previous_step
+
+        return None
