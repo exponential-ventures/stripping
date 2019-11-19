@@ -138,7 +138,7 @@ class Context:
 @SingletonDecorator
 class Stripping:
     steps = list()
-    chain = list()
+    chain_steps = list()
     cache = None
 
     def __init__(self, cache_dir: str, catalysis_credential_name: str = ''):
@@ -189,11 +189,15 @@ class Stripping:
             wrapper.chain = chain
             self.steps.append(wrapper)
             if chain:
-                self.chain.append(wrapper)
+                self.chain_steps.append(wrapper)
 
             return wrapper
 
         return step_decorator(step_fn) if step_fn else step_decorator
+
+    def chain(self, *args, **kwargs):
+        kwargs.update({"chain": True})
+        return self.step(*args, **kwargs)
 
     def execute(self):
         return asyncio.get_event_loop().run_until_complete(self._execute())
@@ -209,11 +213,11 @@ class Stripping:
 
     def get_chained_step(self, current_step):
 
-        for i, step in enumerate(self.chain):
+        for i, step in enumerate(self.chain_steps):
             if step.name == current_step.__name__:
 
                 if i - 1 >= 0:
-                    previous_step = self.chain[i - 1]
+                    previous_step = self.chain_steps[i - 1]
                     return previous_step
 
         return None

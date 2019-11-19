@@ -8,12 +8,12 @@ tmp_dir = f"/tmp/{str(uuid.uuid4())}/cache/"
 st, context = setup_stripping(tmp_dir)
 
 
-@st.step(chain=True)
+@st.chain
 def test_chain_step_1():
     return "Hello"
 
 
-@st.step(chain=True)
+@st.chain
 def test_chain_step_2(prefix: str):
     return prefix + " World!"
 
