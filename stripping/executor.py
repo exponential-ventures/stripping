@@ -167,8 +167,6 @@ class Stripping:
                     else:
                         previous_result = last_step()
 
-                    last_step.chain_ran = True
-
                 if inspect.iscoroutinefunction(step_fn):
 
                     if previous_result is not None:
@@ -214,7 +212,7 @@ class Stripping:
         for i, step in enumerate(self.chain):
             if step.name == current_step.__name__:
 
-                if i-1 >= 0:
+                if i - 1 >= 0:
                     previous_step = self.chain[i - 1]
                     return previous_step
 
