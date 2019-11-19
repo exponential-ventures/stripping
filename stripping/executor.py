@@ -150,6 +150,7 @@ class Stripping:
             step_fn = args[0]
 
         skip_cache = kwargs.get('skip_cache', False)
+        chain = kwargs.get('chain', False)
 
         def step_decorator(step_fn):
             async def wrapper(*args, **kwargs):
@@ -233,17 +234,17 @@ class Stripping:
     #
     #     return step_decorator(step_fn) if step_fn else step_decorator
 
-    def chain(self, *args, **kwargs):
-        kwargs.update({"chain": True})
-        self.step(*args, **kwargs)
-
-    @property
-    def chained_steps(self):
-        _chained_steps = list()
-        for step in self.steps:
-            if step.chain:
-                _chained_steps.append(step)
-
-        return _chained_steps
+    # def chain(self, *args, **kwargs):
+    #     kwargs.update({"chain": True})
+    #     self.step(*args, **kwargs)
+    #
+    # @property
+    # def chained_steps(self):
+    #     _chained_steps = list()
+    #     for step in self.steps:
+    #         if step.chain:
+    #             _chained_steps.append(step)
+    #
+    #     return _chained_steps
 
 
