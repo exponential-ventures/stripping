@@ -138,6 +138,7 @@ class Context:
 @SingletonDecorator
 class Stripping:
     steps = list()
+    chain = list()
     cache = None
 
     def __init__(self, cache_dir: str, catalysis_credential_name: str = ''):
@@ -154,19 +155,45 @@ class Stripping:
 
         def step_decorator(step_fn):
             async def wrapper(*args, **kwargs):
-                result = None
+
+                previous_result = None
+
+                if chain and self.get_chained_step(step_fn) is not None:
+
+                    last_step = self.get_chained_step(step_fn)
+                    logging.debug(f"last step is {last_step}")
+
+                    if inspect.iscoroutinefunction(last_step):
+                        previous_result = await last_step()
+                    else:
+                        previous_result = last_step()
+
+                    last_step.chain_ran = True
 
                 if inspect.iscoroutinefunction(step_fn):
-                    result = await step_fn(*args, **kwargs)
-                else:
-                    result = step_fn(*args, **kwargs)
 
+                    if previous_result is not None:
+                        result = await step_fn(previous_result)
+                    else:
+                        result = await step_fn(*args, **kwargs)
+
+                else:
+
+                    if previous_result is not None:
+                        result = step_fn(previous_result)
+                    else:
+                        result = step_fn(*args, **kwargs)
+
+                logging.debug(f"Result is: {result}")
                 return result
 
             wrapper.code = inspect.getsource(step_fn)
             wrapper.name = step_fn.__name__
             wrapper.skip_cache = skip_cache
+            wrapper.chain = chain
             self.steps.append(wrapper)
+            if chain:
+                self.chain.append(wrapper)
 
             return wrapper
 
@@ -184,67 +211,13 @@ class Stripping:
 
         return result
 
-    # def step(self, *args, **kwargs):
-    #     step_fn = None
-    #
-    #     if len(args) == 1 and callable(args[0]):
-    #         step_fn = args[0]
-    #
-    #     skip_cache = kwargs.get('skip_cache', False)
-    #     chain = kwargs.get('chain', False)
-    #
-    #     def step_decorator(step_fn: Callable):
-    #
-    #         async def wrapper(*args, **kwargs):
-    #
-    #             previous_result = None
-    #
-    #             if chain and len(self.chained_steps) > 0:
-    #
-    #                 last_step = self.chained_steps[-1]
-    #
-    #                 if inspect.iscoroutinefunction(last_step):
-    #                     previous_result = await last_step()
-    #                 else:
-    #                     previous_result = last_step()
-    #
-    #             if inspect.iscoroutinefunction(step_fn):
-    #
-    #                 if previous_result is not None:
-    #                     result = await step_fn(previous_result)
-    #                 else:
-    #                     result = await step_fn(*args, **kwargs)
-    #
-    #             else:
-    #
-    #                 if previous_result is not None:
-    #                     result = step_fn(previous_result)
-    #                 else:
-    #                     result = step_fn(*args, **kwargs)
-    #             logging.debug(f"Result is: {result}")
-    #             return result
-    #
-    #         wrapper.code = inspect.getsource(step_fn)
-    #         wrapper.name = step_fn.__name__
-    #         wrapper.skip_cache = skip_cache
-    #         wrapper.chain = chain
-    #         self.steps.append(wrapper)
-    #
-    #         return wrapper
-    #
-    #     return step_decorator(step_fn) if step_fn else step_decorator
+    def get_chained_step(self, current_step):
 
-    # def chain(self, *args, **kwargs):
-    #     kwargs.update({"chain": True})
-    #     self.step(*args, **kwargs)
-    #
-    # @property
-    # def chained_steps(self):
-    #     _chained_steps = list()
-    #     for step in self.steps:
-    #         if step.chain:
-    #             _chained_steps.append(step)
-    #
-    #     return _chained_steps
+        for i, step in enumerate(self.chain):
+            if step.name == current_step.__name__:
+                breakpoint()
+                if i-1 >= 0:
+                    previous_step = self.chain[i - 1]
+                    return previous_step
 
-
+        return None
