@@ -81,29 +81,30 @@ class CacheInvalidation:
 
     def __init__(self, catalysis_credential_name: str = ''):
         self.__cached_dirs = {}
-        self.storage_client = None
+        self.catalysis_client = None
 
         if catalysis_credential_name != '':
-            self.storage_client = StorageClient(catalysis_credential_name)
+            self.catalysis_client = StorageClient(catalysis_credential_name)
 
     def add_dir(self, cache_dir):
         self.__cached_dirs[cache_dir] = {}
 
-    def force_delete(self, cache_dir):
+    async def force_delete(self, cache_dir):
         LOG.info('Attempting to delete {}'.format(cache_dir))
 
         shutil.rmtree(cache_dir, ignore_errors=True)
 
         if cache_dir in self.__cached_dirs:
-            if self.storage_client:
-                with self.storage_client.open(cache_dir) as remote:
-                    asyncio.get_event_loop().run_until_complete(remote.delete())
+            if self.catalysis_client:
+                with self.catalysis_client.open(cache_dir) as remote:
+                    await remote.delete()
+
             else:
                 del(self.__cached_dirs[cache_dir])
 
         LOG.info('<!> {} deleted'.format(cache_dir))
 
-    def strategy(self):
+    async def strategy(self):
         """
             A Cache is deleted when:
                 - it haven't being accessed for 4 months or more.
@@ -116,29 +117,29 @@ class CacheInvalidation:
             self.__cached_dirs[d] = {}
             for dir_path in glob('{}/*'.format(d)):
                 self.__cached_dirs[d][dir_path] = {}
-                self.__cached_dirs[d][dir_path][ACCESS] = self.__last_access( dir_path)
+                self.__cached_dirs[d][dir_path][ACCESS] = await self.__last_access( dir_path)
                 if self.__cached_dirs[d][dir_path][ACCESS] <= three_months_ago_timestamp:
-                    self.force_delete(dir_path)
+                    await self.force_delete(dir_path)
+                await asyncio.sleep(0.2)
 
-            if self.percentage_disk_free_space() < 15.00:
+            if await self.percentage_disk_free_space() < 15.00:
                 if len(self.__cached_dirs[d]) > 0:
                     # sort the list by least access
-                    sorted_cache_list = sorted(
-                        self.__cached_dirs[d].items(), key=lambda x: x[1][ACCESS])
-                    self.force_delete(sorted_cache_list[0][0])
+                    sorted_cache_list = sorted(self.__cached_dirs[d].items(), key=lambda x: x[1][ACCESS])
+                    await self.force_delete(sorted_cache_list[0][0])
 
     async def strategy_runner(self):
         while True:
-            self.strategy()
+            await self.strategy()
             await asyncio.sleep(60)
 
-    def __last_access(self, path):
+    async def __last_access(self, path):
         """
             Returns when the dir was last accessed
         """
-        if self.storage_client:
-            with self.storage_client.open(path) as remote:
-                return asyncio.get_event_loop().run_until_complete(remote.getatime())
+        if self.catalysis_client:
+            with self.catalysis_client.open(path) as remote:
+                return await remote.getatime()
         else:
             return os.path.getatime(path)
 
@@ -148,10 +149,10 @@ class CacheInvalidation:
     def year_ago(self, years: int = 1):
         return datetime.datetime.now() - datetime.timedelta(days=years * 365)
 
-    def percentage_disk_free_space(self):
-        if self.storage_client:
-            with self.storage_client.open('/') as remote:
-                return asyncio.get_event_loop().run_until_complete(remote.free_space())
+    async def percentage_disk_free_space(self):
+        if self.catalysis_client:
+            with self.catalysis_client.open('/') as remote:
+                return await remote.free_space()
         else:
             stats = os.statvfs('/')
             total = stats.f_frsize * stats.f_blocks

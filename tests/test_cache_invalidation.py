@@ -28,12 +28,12 @@ class TestCacheInvalidation(asynctest.TestCase):
         tracemalloc.stop()
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
-    def test_strategy(self):
+    async def test_strategy(self):
         self.storage.save_step('Pass', 'RETURN_HERE', context)
-        self.cache_invalidation.strategy()
+        await self.cache_invalidation.strategy()
         self.assertTrue(len(glob(f'{tmp_dir}{os.sep}*')) >= 0)
 
         with freeze_time(datetime.datetime.now() + datetime.timedelta(days=0.25*365)):
-            self.cache_invalidation.strategy()
+            await self.cache_invalidation.strategy()
 
         self.assertEqual(0, len(glob(f'{tmp_dir}{os.sep}*')))
