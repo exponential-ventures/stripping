@@ -20,3 +20,4 @@ from .test_executor import TestExecutor
 from .test_storage import TestStorage
 from .test_storage_with_catalysis import TestStorageWithCatalysis
 from .test_cache_invalidation import TestCacheInvalidation
+from .test_cache_invalidation_with_catalysis import TestCacheInvalidationWithCatalysis

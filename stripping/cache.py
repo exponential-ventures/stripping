@@ -28,6 +28,7 @@ import shutil
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
 from .storage import CacheStorage
+from catalysis.storage import StorageClient
 
 ACCESS = 'access'
 DIR_PATH = 'path'
@@ -42,7 +43,7 @@ class StepCache:
         self.cache_dir = cache_dir
         self.storage = CacheStorage(self.cache_dir, catalysis_credential_name)
 
-        self.cache_invalidation = CacheInvalidation()
+        self.cache_invalidation = CacheInvalidation(catalysis_credential_name)
         self.cache_invalidation.add_dir(self.cache_dir)
 
         if '-clean' in sys.argv:
@@ -51,7 +52,6 @@ class StepCache:
                     os.remove(item)
                 else:
                     shutil.rmtree(cache_dir, ignore_errors=True)
-
 
         asyncio.ensure_future(self.cache_invalidation.strategy_runner())
 
@@ -70,7 +70,8 @@ class StepCache:
                 step_return = step_fn(*args, **kwargs)
 
             if not step_fn.skip_cache or not os.environ.get("STRIPPING_SKIP_CACHE", False):
-                self.storage.save_step(step_fn.code, step_return, self.context, *args, **kwargs)
+                self.storage.save_step(
+                    step_fn.code, step_return, self.context, *args, **kwargs)
 
             return step_return
 
@@ -78,8 +79,12 @@ class StepCache:
 @SingletonDecorator
 class CacheInvalidation:
 
-    def __init__(self):
+    def __init__(self, catalysis_credential_name: str = ''):
         self.__cached_dirs = {}
+        self.storage_client = None
+
+        if catalysis_credential_name != '':
+            self.storage_client = StorageClient(catalysis_credential_name)
 
     def add_dir(self, cache_dir):
         self.__cached_dirs[cache_dir] = {}
@@ -90,7 +95,11 @@ class CacheInvalidation:
         shutil.rmtree(cache_dir, ignore_errors=True)
 
         if cache_dir in self.__cached_dirs:
-            del(self.__cached_dirs[cache_dir])
+            if self.storage_client:
+                with self.storage_client.open(cache_dir) as remote:
+                    asyncio.get_event_loop().run_until_complete(remote.delete())
+            else:
+                del(self.__cached_dirs[cache_dir])
 
         LOG.info('<!> {} deleted'.format(cache_dir))
 
@@ -107,14 +116,15 @@ class CacheInvalidation:
             self.__cached_dirs[d] = {}
             for dir_path in glob('{}/*'.format(d)):
                 self.__cached_dirs[d][dir_path] = {}
-                self.__cached_dirs[d][dir_path][ACCESS] = self.__last_access(dir_path)
+                self.__cached_dirs[d][dir_path][ACCESS] = self.__last_access( dir_path)
                 if self.__cached_dirs[d][dir_path][ACCESS] <= three_months_ago_timestamp:
                     self.force_delete(dir_path)
 
             if self.percentage_disk_free_space() < 15.00:
                 if len(self.__cached_dirs[d]) > 0:
                     # sort the list by least access
-                    sorted_cache_list = sorted(self.__cached_dirs[d].items(), key=lambda x: x[1][ACCESS])
+                    sorted_cache_list = sorted(
+                        self.__cached_dirs[d].items(), key=lambda x: x[1][ACCESS])
                     self.force_delete(sorted_cache_list[0][0])
 
     async def strategy_runner(self):
@@ -126,7 +136,11 @@ class CacheInvalidation:
         """
             Returns when the dir was last accessed
         """
-        return os.path.getatime(path)
+        if self.storage_client:
+            with self.storage_client.open(path) as remote:
+                return asyncio.get_event_loop().run_until_complete(remote.getatime())
+        else:
+            return os.path.getatime(path)
 
     def year_from_now(self, years: int = 1):
         return datetime.datetime.now() + datetime.timedelta(days=years * 365)
@@ -135,8 +149,11 @@ class CacheInvalidation:
         return datetime.datetime.now() - datetime.timedelta(days=years * 365)
 
     def percentage_disk_free_space(self):
-        stats = os.statvfs('/')
-        total = stats.f_frsize * stats.f_blocks
-        free = stats.f_frsize * stats.f_bavail
-        return (free / total) * 100
-
+        if self.storage_client:
+            with self.storage_client.open('/') as remote:
+                return asyncio.get_event_loop().run_until_complete(remote.free_space())
+        else:
+            stats = os.statvfs('/')
+            total = stats.f_frsize * stats.f_blocks
+            free = stats.f_frsize * stats.f_bavail
+            return (free / total) * 100
