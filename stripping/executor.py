@@ -167,8 +167,6 @@ class Stripping:
                     else:
                         previous_result = last_step()
 
-                logging.debug(f"previous_result: {previous_result}")
-
                 if inspect.iscoroutinefunction(step_fn):
 
                     if chain and previous_result is not None:
