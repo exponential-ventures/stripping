@@ -158,7 +158,7 @@ class Stripping:
 
                 previous_result = None
 
-                if chain and self.get_chained_step(step_fn) is not None:
+                if self.get_chained_step(step_fn) is not None:
 
                     last_step = self.get_chained_step(step_fn)
 
@@ -167,21 +167,23 @@ class Stripping:
                     else:
                         previous_result = last_step()
 
+                logging.debug(f"previous_result: {previous_result}")
+
                 if inspect.iscoroutinefunction(step_fn):
 
-                    if previous_result is not None:
+                    if chain and previous_result is not None:
                         result = await step_fn(previous_result)
                     else:
                         result = await step_fn(*args, **kwargs)
 
                 else:
 
-                    if previous_result is not None:
+                    if chain and previous_result is not None:
                         result = step_fn(previous_result)
                     else:
                         result = step_fn(*args, **kwargs)
 
-                return result
+                return result or previous_result
 
             wrapper.code = inspect.getsource(step_fn)
             wrapper.name = step_fn.__name__
