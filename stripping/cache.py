@@ -74,7 +74,6 @@ class StepCache:
             return step_return
 
 
-
 @SingletonDecorator
 class CacheInvalidation:
 
