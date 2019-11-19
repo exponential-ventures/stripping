@@ -28,7 +28,7 @@ import shutil
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
 from .storage import CacheStorage
-from catalysis.storage import StorageClient
+from catalysis.storage.storage_client import StorageClient
 
 ACCESS = 'access'
 DIR_PATH = 'path'
