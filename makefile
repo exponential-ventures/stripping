@@ -9,6 +9,11 @@ test:
 unit-test:
 	docker run -it --rm stripping python  -m unittest -v $(test_name)
 
+# Run specific script by calling like such:
+# make script_name=tests.test_cache_with_catalysis script
+script:
+	docker run -it --rm stripping python  $(script_name)
+
 build-example:
 	docker build  -f docker/example/Dockerfile -t stripping-example .
 
