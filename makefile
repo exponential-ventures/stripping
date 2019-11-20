@@ -2,7 +2,7 @@ build:
 	docker build -f docker/Dockerfile -t stripping .
 
 test:
-	docker run -it --rm stripping python -m unittest -v -f tests
+	docker run -it --rm stripping python -m unittest discover -v tests
 
 # Run specific tests by calling like such:
 # make test_name=tests.test_cache_with_catalysis unit-test

@@ -1,9 +1,10 @@
+from os.path import split, join, exists
 import asynctest
 import shutil
+import asyncio
 import tracemalloc
 import datetime
 import os
-from os.path import split, join, exists
 from freezegun import freeze_time
 from glob import glob
 
@@ -16,15 +17,17 @@ tmp_dir = join(split(__file__)[0], '.test_cache')
 st, context = setup_stripping(tmp_dir)
 
 
-class TestCacheInvalidation(asynctest.TestCase):
+class TestCacheInvalidationWithCatalysis(asynctest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         tracemalloc.start()
-        self.storage = CacheStorage(tmp_dir)
-        self.cache_invalidation = CacheInvalidation()
-        self.cache_invalidation.add_dir(tmp_dir)
+        cls.storage = CacheStorage(tmp_dir)
+        cls.cache_invalidation = CacheInvalidation('local')
+        cls.cache_invalidation.add_dir(tmp_dir)
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         tracemalloc.stop()
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
