@@ -20,7 +20,6 @@ from pandas.core.frame import DataFrame
 class Dataset:
     def __init__(self, dataframe: DataFrame):
         self.dataFrame = dataframe
-        self.__filters = []
 
     def column_selection(self, columns: list) -> None:
         self.dataFrame = self.dataFrame[columns]
