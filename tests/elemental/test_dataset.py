@@ -3,6 +3,7 @@ import pandas as pd
 
 from stripping.elemental import Elemental
 
+
 class TestDataset(asynctest.TestCase):
 
     @classmethod
@@ -17,7 +18,6 @@ class TestDataset(asynctest.TestCase):
         self.elemental.report('test elemental')
         self.elemental.filters(self.avg, self.std)
         self.elemental.analyze(self.dt)
-
 
     def avg(self, dataframe):
         return dataframe.mean()
