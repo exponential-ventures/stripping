@@ -49,6 +49,6 @@ class Elemental:
 
     @staticmethod
     def _assert_is_numeric(l: list):
-        for item in l:
-            if type(item) != Number:
-                raise TypeError(f"Item {item} list is not numeric")
+        for index, item in enumerate(l):
+            if not isinstance(item, Number):
+                raise TypeError(f"Item({item}) at index {index} of list is not numeric, is {type(item)}")
