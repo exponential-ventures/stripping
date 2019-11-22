@@ -14,3 +14,5 @@
 ## If you do not have a written authorization to read this code
 ## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
+
+from stripping.elemental.base import Elemental
