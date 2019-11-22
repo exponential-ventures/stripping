@@ -1,4 +1,6 @@
+import statistics
 from datetime import datetime
+from numbers import Number
 
 from catalysis.storage import StorageClient
 
@@ -40,3 +42,13 @@ class Elemental:
         report += f"===================== GENERATED AT: {datetime.now()} =====================\n"
 
         return report
+
+    def average(self, l: list):
+        self._assert_is_numeric(l)
+        return statistics.mean(l)
+
+    @staticmethod
+    def _assert_is_numeric(l: list):
+        for item in l:
+            if type(item) != Number:
+                raise TypeError(f"Item {item} list is not numeric")
