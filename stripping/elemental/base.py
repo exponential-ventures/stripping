@@ -21,12 +21,13 @@ from datetime import datetime
 
 from catalysis.storage import StorageClient
 
+STOUT = 'stdout'
+FILE = 'file'
+
+FORMATS = [STOUT, FILE]
 
 class Elemental:
-    formats = [
-        'stdout',
-        'file',
-    ]
+
     statistics = dict()
 
     def __init__(self):
@@ -63,16 +64,14 @@ class Elemental:
 
     def _elemental_report(self) -> None:
 
-        report_type = self._report_type.lower()
+        if self._report_type not in FORMATS:
+            raise TypeError(f"Unknown report type. Only allowed: {FORMATS}")
 
-        if report_type not in self.formats:
-            raise TypeError(f"Unknown report type. Only allowed: {self.formats}")
-
-        if report_type == 'stdout':
+        if self._report_type == STOUT:
 
             print(self._generate_report(self._report_name))
 
-        elif report_type == 'file':
+        elif self._report_type == FILE:
 
             if self._catalysis_client is None:
                 with open(self._path, '+w') as f:

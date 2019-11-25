@@ -2,6 +2,7 @@ import asynctest
 import pandas as pd
 
 from stripping.elemental import Elemental
+from stripping.elemental.filters import avg, std, max, min
 
 
 class TestDataset(asynctest.TestCase):
@@ -16,11 +17,5 @@ class TestDataset(asynctest.TestCase):
     def test_column_selection_and_filters(self):
         self.elemental.column_selection(['Occupation', 'Purchase'])
         self.elemental.report('test elemental')
-        self.elemental.filters(self.avg, self.std)
+        self.elemental.filters(avg, std, max, min)
         self.elemental.analyze(self.dt)
-
-    def avg(self, dataframe):
-        return dataframe.mean()
-
-    def std(self, dataframe):
-        return dataframe.std()
