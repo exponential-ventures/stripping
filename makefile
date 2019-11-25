@@ -29,3 +29,6 @@ example-script:
 
 ssh:
 	docker run -it --rm stripping /bin/bash
+
+clean-pyc:
+	find . -path "*.pyc"  -delete
