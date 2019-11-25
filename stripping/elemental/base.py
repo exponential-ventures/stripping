@@ -59,6 +59,7 @@ class Elemental:
 
     def analyze(self, dataframe):
         dataframe = dataframe[self._columns]
+        self._field_infererence(dataframe)
         self.statistics = self.__apply_filters(dataframe)
         self._elemental_report()
 
@@ -83,10 +84,15 @@ class Elemental:
     def _generate_report(self, report_name: str) -> str:
         report = f"\n\n===================== {report_name.upper()} =====================\n"
         for key in self.statistics:
-            report += key.upper() + "\n"
+            report += "{} \n".format(key.upper())
             for k in self.statistics[key].keys():
                 report += "{} \t {} \n".format(k, self.statistics[key][k])
+
+            report += "\n"
 
         report += f"===================== GENERATED AT: {datetime.now()} =====================\n"
 
         return report
+
+    def _field_infererence(self, dataframe):
+        dataframe.infer_objects()
