@@ -26,8 +26,8 @@ FILE = 'file'
 
 FORMATS = [STOUT, FILE]
 
-class Elemental:
 
+class Elemental:
     statistics = dict()
 
     def __init__(self):
@@ -44,7 +44,7 @@ class Elemental:
     def filters(self, *filters):
         self.__filters = filters
 
-    def report(self, report_name, path="/tmp/elemental_report.txt", report_type='stdout',
+    def report(self, report_name, path="/tmp/elemental_report.txt", report_type=STOUT,
                catalysis_client: StorageClient = None):
         self._path = path
         self._report_type = report_type
