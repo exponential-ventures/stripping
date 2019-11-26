@@ -16,10 +16,10 @@
 ## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
 
-from pandas.core.frame import DataFrame
 from datetime import datetime
 
 from catalysis.storage import StorageClient
+from pandas.core.frame import DataFrame
 
 STOUT = 'stdout'
 FILE = 'file'
@@ -57,10 +57,10 @@ class Elemental:
             report[func.__name__] = func(dataframe)
         return report
 
-    def analyze(self, dataframe):
-        dataframe = dataframe[self._columns]
-        self._field_infererence(dataframe)
-        self.statistics = self.__apply_filters(dataframe)
+    def analyze(self, df: DataFrame):
+        df = df[self._columns]
+        self._field_infererence(df)
+        self.statistics = self.__apply_filters(df)
         self._elemental_report()
 
     def _elemental_report(self) -> None:
@@ -94,5 +94,5 @@ class Elemental:
 
         return report
 
-    def _field_infererence(self, dataframe):
-        dataframe.infer_objects()
+    def _field_infererence(self, df: DataFrame):
+        df.infer_objects()
