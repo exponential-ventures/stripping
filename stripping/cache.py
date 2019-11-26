@@ -25,10 +25,11 @@ import shutil
 import sys
 from glob import glob
 
+from catalysis.storage.storage_client import StorageClient
+
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
 from .storage import CacheStorage
-from catalysis.storage.storage_client import StorageClient
 
 ACCESS = 'access'
 DIR_PATH = 'path'
@@ -101,8 +102,7 @@ class CacheInvalidation:
             logging.info('<!> {} deleted'.format(cache_dir))
 
         if cache_dir in self.__cached_dirs:
-            del(self.__cached_dirs[cache_dir])
-
+            del (self.__cached_dirs[cache_dir])
 
     async def strategy(self):
         """
@@ -117,7 +117,7 @@ class CacheInvalidation:
             self.__cached_dirs[d] = {}
             for dir_path in glob('{}/*'.format(d)):
                 self.__cached_dirs[d][dir_path] = {}
-                self.__cached_dirs[d][dir_path][ACCESS] = await self.__last_access( dir_path)
+                self.__cached_dirs[d][dir_path][ACCESS] = await self.__last_access(dir_path)
                 if self.__cached_dirs[d][dir_path][ACCESS] <= three_months_ago_timestamp:
                     await self.force_delete(dir_path)
                 await asyncio.sleep(0.2)
@@ -143,12 +143,6 @@ class CacheInvalidation:
         else:
             return os.path.getatime(path)
 
-    def year_from_now(self, years: int = 1):
-        return datetime.datetime.now() + datetime.timedelta(days=years * 365)
-
-    def year_ago(self, years: float = 1):
-        return datetime.datetime.now() - datetime.timedelta(days=years * 365)
-
     async def percentage_disk_free_space(self):
         if self.catalysis_client:
             with self.catalysis_client.open('/') as remote:
@@ -159,3 +153,10 @@ class CacheInvalidation:
             free = stats.f_frsize * stats.f_bavail
             return (free / total) * 100
 
+    @staticmethod
+    def year_from_now(years: int = 1):
+        return datetime.datetime.now() + datetime.timedelta(days=years * 365)
+
+    @staticmethod
+    def year_ago(years: float = 1):
+        return datetime.datetime.now() - datetime.timedelta(days=years * 365)
