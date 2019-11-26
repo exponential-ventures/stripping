@@ -21,6 +21,7 @@ import inspect
 import logging
 import os
 import pickle
+from io import BytesIO
 from tempfile import TemporaryFile
 
 import numpy as np
@@ -92,6 +93,15 @@ class Context:
                 with open(context_file_name, 'wb') as attr_file:
                     if isinstance(attribute, np.ndarray):
                         logging.debug(f"Context Attribute '{attr}' is a numpy array.")
+
+                        # np.save expects a str and not a BytesIO object.
+                        if isinstance(attr_file, BytesIO):
+                            # assume bytes_io is a `BytesIO` object
+                            byte_str = attr_file.read()
+
+                            # Convert to a "unicode" object
+                            attr_file = byte_str.decode('UTF-8')  # Or use the encoding you expect
+
                         np.save(attr_file, attribute)
                     else:
                         logging.debug(f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
