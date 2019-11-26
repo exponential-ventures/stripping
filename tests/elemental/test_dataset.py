@@ -2,7 +2,7 @@ import asynctest
 import pandas as pd
 
 from stripping.elemental import Elemental
-from stripping.elemental.filters import __all__
+from stripping.elemental.filters import filters
 
 
 class TestDataset(asynctest.TestCase):
@@ -18,5 +18,5 @@ class TestDataset(asynctest.TestCase):
         self.elemental.column_selection(
             ['Occupation', 'Purchase', 'Age', 'City_Category'])
         self.elemental.report('test elemental')
-        self.elemental.filters(*__all__)
+        self.elemental.filters(*filters)
         self.elemental.analyze(self.dt)

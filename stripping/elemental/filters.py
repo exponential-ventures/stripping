@@ -130,5 +130,5 @@ def frequency(dataframe):
     return frequencies
 
 
-__all__ = [avg, std, max, min, count, count_null, count_notnull, median, entrophy_index, entrophy_gain, gini_index,
+filters = [avg, std, max, min, count, count_null, count_notnull, median, entrophy_index, entrophy_gain, gini_index,
            frequency, max_length, min_length, avg_length, number_uniques, memory_size, memory_avg, sample]
