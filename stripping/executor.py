@@ -166,6 +166,7 @@ class Stripping:
 
         skip_cache = kwargs.get('skip_cache', False)
         chain = kwargs.get('chain', False)
+        is_elemental = kwargs.get('is_elemental', False)
 
         def step_decorator(step_fn):
             async def wrapper(*args, **kwargs):
@@ -180,6 +181,17 @@ class Stripping:
                         previous_result = await last_step()
                     else:
                         previous_result = last_step()
+
+                if is_elemental:
+
+                    last_step = self.get_last_step(step_fn)
+
+                    if inspect.iscoroutinefunction(last_step):
+                        ds = await last_step()
+                    else:
+                        ds = last_step()
+
+                    kwargs.update({"ds": ds})
 
                 if inspect.iscoroutinefunction(step_fn):
 
@@ -207,6 +219,7 @@ class Stripping:
             wrapper.name = step_fn.__name__
             wrapper.skip_cache = skip_cache
             wrapper.chain = chain
+            wrapper.is_elemental = is_elemental
             self.steps.append(wrapper)
             if chain:
                 self.chain_steps.append(wrapper)
@@ -242,29 +255,35 @@ class Stripping:
 
         return None
 
+    def get_last_step(self, current_step):
+
+        for i, step in enumerate(self.steps):
+            if step.name == current_step.__name__:
+
+                if i - 1 >= 0:
+                    previous_step = self.steps[i - 1]
+                    return previous_step
+
+        return None
+
     def elemental_step(self, name: str, path=None, report_type=None):
 
-        args = [
-            self.__elemental_step,
+        el_args = [
+            name,
         ]
 
-        kwargs = {
-            'name': name,
+        el_kwargs = {
             'path': path,
             'report_type': report_type,
-            'is_elemental': True,
         }
 
-        self.step(*args, **kwargs)
+        def wrapper_el(*_, **kwargs):
+            el_kwargs.update(kwargs)
+            self.__elemental_step(*el_args, **el_kwargs)
 
-    def __elemental_step(self, name: str, path=None, report_type=None):
-        breakpoint()
-        if len(self.steps) < 1:
-            raise RuntimeError("Elemental needs at least one step to provide it's dataset.")
+        self.step(wrapper_el, is_elemental=True, is_chain=True)
 
-        ds = asyncio.get_event_loop().run_until_complete(self.cache.execute_or_retrieve(self.steps[-1]))
-        if not isinstance(ds, DataFrame):
-            raise RuntimeError("Last step does not return a valid pandas.DataFrame object to use in Elemental")
+    def __elemental_step(self, name: str, ds: DataFrame, path=None, report_type=None):
 
         elemental = Elemental(ds)
         elemental.column_selection(self._elemental_columns)
