@@ -45,11 +45,23 @@ class Elemental:
     def filters(self, *filters):
         self.__filters = filters
 
-    def report(self, path="/tmp/elemental_report.txt", report_type=STOUT, catalysis_client: StorageClient = None):
-        self._path = path
-        self._report_type = report_type
-        self._catalysis_client = catalysis_client
-        self._elemental_report()
+    def report(self, name: str, path="/tmp/elemental_report.txt", report_type=STOUT,
+               catalysis_client: StorageClient = None):
+
+        if report_type not in FORMATS:
+            raise TypeError(f"Unknown report type. Only allowed: {FORMATS}")
+
+        if report_type == STOUT:
+            print(self._generate_report(name))
+
+        elif report_type == FILE:
+
+            if catalysis_client is None:
+                with open(path, '+w') as f:
+                    f.write(self._generate_report(name))
+            else:
+                with catalysis_client.open(self._path, '+w') as f:
+                    f.write(self._generate_report(name))
 
     def __apply_filters(self, df: DataFrame) -> dict:
         report = {}
@@ -63,24 +75,6 @@ class Elemental:
         self._field_inference(df)
 
         self.statistics = self.__apply_filters(df)
-
-    def _elemental_report(self) -> None:
-
-        if self._report_type not in FORMATS:
-            raise TypeError(f"Unknown report type. Only allowed: {FORMATS}")
-
-        if self._report_type == STOUT:
-
-            print(self._generate_report(self._report_name))
-
-        elif self._report_type == FILE:
-
-            if self._catalysis_client is None:
-                with open(self._path, '+w') as f:
-                    f.write(self._generate_report(self._report_name))
-            else:
-                with self._catalysis_client.open(self._path, '+w') as f:
-                    f.write(self._generate_report(self._report_name))
 
     def _generate_report(self, report_name: str) -> str:
         report = f"\n\n===================== {report_name} =====================\n"
