@@ -152,7 +152,8 @@ class Stripping:
     steps = list()
     chain_steps = list()
     cache = None
-    elemental = None
+    _elemental_columns = list()
+    _elemental_filters = list()
 
     def __init__(self, cache_dir: str, catalysis_credential_name: str = ''):
         self.cache = StepCache(cache_dir, catalysis_credential_name)
@@ -226,8 +227,10 @@ class Stripping:
         if not isinstance(ds, DataFrame):
             raise RuntimeError("Last step does not return a valid pandas.DataFrame object to use in Elemental")
 
-        self.elemental = Elemental(ds)
-        self.elemental.analyze()
+        elemental = Elemental(ds)
+        elemental.column_selection(self._elemental_columns)
+        elemental.filters(*self._elemental_filters)
+        elemental.analyze()
         report_kwargs = {
             'catalysis_client': self.cache.storage.catalysis_client,
             'name': name,
@@ -239,7 +242,13 @@ class Stripping:
         if report_type:
             report_kwargs.update({"report_type": report_type})
 
-        self.elemental.report(**report_kwargs)
+        elemental.report(**report_kwargs)
+
+    def elemental_columns(self, columns: list):
+        self._elemental_columns = list(np.unique(self._elemental_columns + columns))
+
+    def elemental_filters(self, *args):
+        self._elemental_filters.extend(x for x in args if x not in self._elemental_filters)
 
     def execute(self):
         return asyncio.get_event_loop().run_until_complete(self._execute())
