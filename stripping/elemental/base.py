@@ -63,18 +63,18 @@ class Elemental:
                 with catalysis_client.open(self._path, '+w') as f:
                     f.write(self._generate_report(name))
 
-    def __apply_filters(self, df: DataFrame) -> dict:
-        report = {}
-        for func in self.__filters:
-            report[func.__name__] = func(df)
-        return report
-
     def analyze(self):
         df = self.ds[self._columns]
 
         self._field_inference(df)
 
         self.statistics = self.__apply_filters(df)
+
+    def __apply_filters(self, df: DataFrame) -> dict:
+        report = {}
+        for func in self.__filters:
+            report[func.__name__] = func(df)
+        return report
 
     def _generate_report(self, report_name: str) -> str:
         report = f"\n\n===================== {report_name} =====================\n"
