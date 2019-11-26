@@ -30,12 +30,12 @@ FORMATS = [STOUT, FILE]
 class Elemental:
     statistics = dict()
 
-    def __init__(self):
+    def __init__(self, name: str):
         self.__filters = []
         self._columns = []
         self._path = None
         self._report_type = None
-        self._report_name = None
+        self._report_name = name
         self._catalysis_client = None
 
     def column_selection(self, columns: list) -> None:
@@ -44,24 +44,22 @@ class Elemental:
     def filters(self, *filters):
         self.__filters = filters
 
-    def report(self, report_name, path="/tmp/elemental_report.txt", report_type=STOUT,
-               catalysis_client: StorageClient = None):
+    def report(self, path="/tmp/elemental_report.txt", report_type=STOUT, catalysis_client: StorageClient = None):
         self._path = path
         self._report_type = report_type
-        self._report_name = report_name
         self._catalysis_client = catalysis_client
+        self._elemental_report()
 
-    def __apply_filters(self, dataframe) -> dict:
+    def __apply_filters(self, df: DataFrame) -> dict:
         report = {}
         for func in self.__filters:
-            report[func.__name__] = func(dataframe)
+            report[func.__name__] = func(df)
         return report
 
     def analyze(self, df: DataFrame):
         df = df[self._columns]
-        self._field_infererence(df)
+        self._field_inference(df)
         self.statistics = self.__apply_filters(df)
-        self._elemental_report()
 
     def _elemental_report(self) -> None:
 
@@ -82,7 +80,7 @@ class Elemental:
                     f.write(self._generate_report(self._report_name))
 
     def _generate_report(self, report_name: str) -> str:
-        report = f"\n\n===================== {report_name.upper()} =====================\n"
+        report = f"\n\n===================== {report_name} =====================\n"
         for key in self.statistics:
             report += "{} \n".format(key.upper())
             for k in self.statistics[key].keys():
@@ -94,5 +92,6 @@ class Elemental:
 
         return report
 
-    def _field_infererence(self, df: DataFrame):
+    @staticmethod
+    def _field_inference(df: DataFrame):
         df.infer_objects()

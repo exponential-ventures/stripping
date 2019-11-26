@@ -26,6 +26,7 @@ from tempfile import TemporaryFile
 import numpy as np
 from catalysis.storage import StorageClient
 
+from stripping.elemental import Elemental
 from .cache import StepCache
 from .singleton import SingletonDecorator
 
@@ -140,6 +141,7 @@ class Stripping:
     steps = list()
     chain_steps = list()
     cache = None
+    elemental = None
 
     def __init__(self, cache_dir: str, catalysis_credential_name: str = ''):
         self.cache = StepCache(cache_dir, catalysis_credential_name)
@@ -198,6 +200,9 @@ class Stripping:
     def chain(self, *args, **kwargs):
         kwargs.update({"chain": True})
         return self.step(*args, **kwargs)
+
+    def elemental_step(self, name: str):
+        self.elemental = Elemental(name)
 
     def execute(self):
         return asyncio.get_event_loop().run_until_complete(self._execute())
