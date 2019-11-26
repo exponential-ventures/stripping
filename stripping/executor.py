@@ -244,14 +244,21 @@ class Stripping:
 
     def elemental_step(self, name: str, path=None, report_type=None):
 
-        args = [self.__elemental_step(name, path=path, report_type=report_type)]
+        args = [
+            self.__elemental_step,
+        ]
+
         kwargs = {
+            'name': name,
+            'path': path,
+            'report_type': report_type,
             'is_elemental': True,
         }
 
         self.step(*args, **kwargs)
 
     def __elemental_step(self, name: str, path=None, report_type=None):
+        breakpoint()
         if len(self.steps) < 1:
             raise RuntimeError("Elemental needs at least one step to provide it's dataset.")
 

@@ -22,6 +22,8 @@ class StepIntegrationCase(unittest.TestCase):
 
         st.elemental_step(report_name, path=report_path, report_type=FILE)
 
+        st.execute()
+
         with open(report_path) as f:
             contents = f.read()
             self.assertIn(report_name, contents)
@@ -38,6 +40,8 @@ class StepIntegrationCase(unittest.TestCase):
             return df
 
         st.elemental_step("test_report")
+
+        st.execute()
 
     def test_adding_filters(self):
         st, _ = set_up_stripping_for_tests()
@@ -60,6 +64,7 @@ class StepIntegrationCase(unittest.TestCase):
         )
 
         st.elemental_step("report name", path=report_path, report_type=FILE)
+        st.execute()
 
         with open(report_path) as f:
             contents = f.read()
