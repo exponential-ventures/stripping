@@ -1,8 +1,26 @@
 build:
 	docker build -f docker/Dockerfile -t stripping .
 
+
+test-sidecar-up:
+	docker network create catalysis || true
+	docker run -d --name server --net catalysis catalysis_proxy
+
+test-sidecar-down:
+	docker rm -f server
+	docker network rm catalysis
+
 test:
-	docker run -it --rm stripping python -m unittest discover -v tests
+	$(MAKE) test-sidecar-down || true
+	$(MAKE) test-sidecar-up
+	docker run -it --rm --net catalysis stripping:latest python -m unittest discover -v -f  tests
+	$(MAKE) test-sidecar-down
+
+unit-test-with_catalysis:
+	$(MAKE) test-sidecar-down || true
+	$(MAKE) test-sidecar-up
+	docker run -it --rm --net catalysis stripping:latest python -m unittest -v -f $(test_name)
+	$(MAKE) test-sidecar-down
 
 # Run specific tests by calling like such:
 # make test_name=tests.test_cache_with_catalysis unit-test
