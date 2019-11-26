@@ -11,13 +11,13 @@ class TestDataset(asynctest.TestCase):
         cls.dt = pd.read_csv('datasets/black_friday.csv', nrows=20)
         cls.dt['Occupation'] = cls.dt['Occupation'].astype(int)
         cls.dt['Purchase'] = cls.dt['Purchase'].astype(int)
-        cls.elemental = Elemental('test elemental')
 
     def test_column_selection_and_filters(self):
+        elemental = Elemental(self.dt)
 
-        self.elemental.column_selection(['Occupation', 'Purchase', 'Age', 'City_Category'])
+        elemental.column_selection(['Occupation', 'Purchase', 'Age', 'City_Category'])
 
-        self.elemental.filters(
+        elemental.filters(
             filters.avg,
             filters.std,
             filters.max,
@@ -33,5 +33,5 @@ class TestDataset(asynctest.TestCase):
             filters.memory_avg,
         )
 
-        self.elemental.analyze(self.dt)
-        self.elemental.report()
+        elemental.analyze()
+        elemental.report('test elemental')

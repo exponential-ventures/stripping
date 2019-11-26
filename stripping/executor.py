@@ -208,7 +208,7 @@ class Stripping:
         kwargs.update({"chain": True})
         return self.step(*args, **kwargs)
 
-    def elemental_step(self, name: str):
+    def elemental_step(self, name: str, path=None, report_type=None):
         if len(self.steps) < 1:
             raise RuntimeError("Elemental needs at least one step to provide it's dataset.")
 
@@ -216,7 +216,20 @@ class Stripping:
         if not isinstance(ds, DataFrame):
             raise RuntimeError("Last step does not return a valid pandas.DataFrame object to use in Elemental")
 
-        self.elemental = Elemental(name, ds=ds)
+        self.elemental = Elemental(ds)
+        self.elemental.analyze()
+        report_kwargs = {
+            'catalysis_client': self.cache.storage.catalysis_client,
+            'name': name,
+        }
+
+        if path:
+            report_kwargs.update({"path": path})
+
+        if report_type:
+            report_kwargs.update({"report_type": report_type})
+
+        self.elemental.report(**report_kwargs)
 
     def execute(self):
         return asyncio.get_event_loop().run_until_complete(self._execute())

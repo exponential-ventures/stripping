@@ -9,7 +9,8 @@ from tests.utils import set_up_stripping_for_tests
 class StepIntegrationCase(unittest.TestCase):
 
     def test_report_name(self):
-        name = "test_report"
+        report_name = "test_report"
+        report_path = "/tmp/report.txt"
 
         st, _ = set_up_stripping_for_tests()
 
@@ -17,16 +18,12 @@ class StepIntegrationCase(unittest.TestCase):
         def load_ds():
             return pd.DataFrame()
 
-        st.elemental_step(name)
+        st.elemental_step(report_name, path=report_path, report_type=FILE)
         self.assertIsNotNone(st.elemental)
-
-        report_path = "/tmp/report.txt"
-
-        st.elemental.report(path=report_path, report_type=FILE)
 
         with open(report_path) as f:
             contents = f.read()
-            self.assertIn(name, contents)
+            self.assertIn(report_name, contents)
 
     def test_initializing_with_last_step_as_input(self):
         st, _ = set_up_stripping_for_tests()
