@@ -1,4 +1,6 @@
 import numpy as np
+import pandas as pd
+from math import e
 
 
 def avg(dataframe):
@@ -79,3 +81,54 @@ def memory_avg(dataframe):
             avg_types[k] = field.dtype.itemsize
 
     return avg_types
+
+
+def describe(dataframe):
+    return dataframe.describe()
+
+
+def sample(dataframe):
+    return dataframe.sample(n=20)
+
+
+def median(dataframe):
+    return dataframe.median()
+
+
+def gini_index(dataframe):
+    gini_index = {}
+    for k in dataframe.keys():
+        probalities = dataframe[k].value_counts(normalize=True)
+        gini_index[k] = 1 - np.sum(np.square(probalities))
+
+    return gini_index
+
+
+def entrophy_gain(dataframe):
+    gain = {}
+    for k in dataframe.keys():
+        base = None
+        value_counts = dataframe[k].value_counts(normalize=True, sort=False)
+        base = e if base is None else base
+        gain[k] = -(value_counts * np.log(value_counts) / np.log(base)).sum()
+    return gain
+
+
+def entrophy_index(dataframe):
+    index = {}
+    for k in dataframe.keys():
+        probalities = dataframe[k].value_counts(normalize=True)
+        index[k] = -1 * np.sum(np.log2(probalities) * probalities)
+    return index
+
+
+def frequency(dataframe):
+    frequencies = {}
+    for k in dataframe.keys():
+        frequencies[k] = dataframe[k].value_counts().to_dict()
+
+    return frequencies
+
+
+__all__ = [avg, std, max, min, count, count_null, count_notnull, median, entrophy_index, entrophy_gain, gini_index,
+           frequency, max_length, min_length, avg_length, number_uniques, memory_size, memory_avg, sample]
