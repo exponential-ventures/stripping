@@ -219,7 +219,39 @@ class Stripping:
         kwargs.update({"chain": True})
         return self.step(*args, **kwargs)
 
+    def execute(self):
+        return asyncio.get_event_loop().run_until_complete(self._execute())
+
+    async def _execute(self):
+
+        result = None
+
+        for i in range(len(self.steps)):
+            result = await self.cache.execute_or_retrieve(self.steps[i])
+
+        return result
+
+    def get_chained_step(self, current_step):
+
+        for i, step in enumerate(self.chain_steps):
+            if step.name == current_step.__name__:
+
+                if i - 1 >= 0:
+                    previous_step = self.chain_steps[i - 1]
+                    return previous_step
+
+        return None
+
     def elemental_step(self, name: str, path=None, report_type=None):
+
+        args = [self.__elemental_step(name, path=path, report_type=report_type)]
+        kwargs = {
+            'is_elemental': True,
+        }
+
+        self.step(*args, **kwargs)
+
+    def __elemental_step(self, name: str, path=None, report_type=None):
         if len(self.steps) < 1:
             raise RuntimeError("Elemental needs at least one step to provide it's dataset.")
 
@@ -249,26 +281,3 @@ class Stripping:
 
     def elemental_filters(self, *args):
         self._elemental_filters.extend(x for x in args if x not in self._elemental_filters)
-
-    def execute(self):
-        return asyncio.get_event_loop().run_until_complete(self._execute())
-
-    async def _execute(self):
-
-        result = None
-
-        for i in range(len(self.steps)):
-            result = await self.cache.execute_or_retrieve(self.steps[i])
-
-        return result
-
-    def get_chained_step(self, current_step):
-
-        for i, step in enumerate(self.chain_steps):
-            if step.name == current_step.__name__:
-
-                if i - 1 >= 0:
-                    previous_step = self.chain_steps[i - 1]
-                    return previous_step
-
-        return None
