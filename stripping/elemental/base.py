@@ -30,12 +30,13 @@ FORMATS = [STOUT, FILE]
 class Elemental:
     statistics = dict()
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, ds: DataFrame):
         self.__filters = []
         self._columns = []
         self._path = None
         self._report_type = None
         self._report_name = name
+        self.ds = ds
         self._catalysis_client = None
 
     def column_selection(self, columns: list) -> None:
@@ -56,9 +57,11 @@ class Elemental:
             report[func.__name__] = func(df)
         return report
 
-    def analyze(self, df: DataFrame):
-        df = df[self._columns]
+    def analyze(self):
+        df = self.ds[self._columns]
+
         self._field_inference(df)
+
         self.statistics = self.__apply_filters(df)
 
     def _elemental_report(self) -> None:

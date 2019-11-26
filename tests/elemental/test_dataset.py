@@ -1,9 +1,7 @@
 import asynctest
 import pandas as pd
 
-from stripping.elemental import Elemental
-from stripping.elemental.filters import (avg, std, max, min, count, count_null, count_notnull, max_length, min_length,
-                                         avg_length, number_uniques, memory_size, memory_avg)
+from stripping.elemental import Elemental, filters
 
 
 class TestDataset(asynctest.TestCase):
@@ -13,13 +11,27 @@ class TestDataset(asynctest.TestCase):
         cls.dt = pd.read_csv('datasets/black_friday.csv', nrows=20)
         cls.dt['Occupation'] = cls.dt['Occupation'].astype(int)
         cls.dt['Purchase'] = cls.dt['Purchase'].astype(int)
-        cls.elemental = Elemental()
+        cls.elemental = Elemental('test elemental')
 
     def test_column_selection_and_filters(self):
-        self.elemental.column_selection(
-            ['Occupation', 'Purchase', 'Age', 'City_Category'])
-        self.elemental.report('test elemental')
-        self.elemental.filters(avg, std, max, min, count,
-                               count_null, count_notnull, max_length, min_length, avg_length, number_uniques,
-                               memory_size, memory_avg)
+
+        self.elemental.column_selection(['Occupation', 'Purchase', 'Age', 'City_Category'])
+
+        self.elemental.filters(
+            filters.avg,
+            filters.std,
+            filters.max,
+            filters.min,
+            filters.count,
+            filters.count_null,
+            filters.count_notnull,
+            filters.max_length,
+            filters.min_length,
+            filters.avg_length,
+            filters.number_uniques,
+            filters.memory_size,
+            filters.memory_avg,
+        )
+
         self.elemental.analyze(self.dt)
+        self.elemental.report()

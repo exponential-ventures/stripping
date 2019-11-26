@@ -1,13 +1,12 @@
-import uuid
 from unittest import TestCase
 
-from stripping import setup_stripping
+from tests.utils import set_up_stripping_for_tests
 
 
 class ChainingTestCase(TestCase):
 
     def test_chain_only(self):
-        st, context = self._setUpStripping()
+        st, context = set_up_stripping_for_tests()
 
         @st.chain
         def test_chain_step_1():
@@ -21,7 +20,7 @@ class ChainingTestCase(TestCase):
         self.assertEqual('Hello World!', r)
 
     def test_mixed_chain(self):
-        st, context = self._setUpStripping()
+        st, context = set_up_stripping_for_tests()
 
         @st.step
         def test_step_1():
@@ -47,7 +46,7 @@ class ChainingTestCase(TestCase):
         self.assertEqual(None, r)
 
     def test_regular_steps_only(self):
-        st, context = self._setUpStripping()
+        st, context = set_up_stripping_for_tests()
 
         @st.step
         def test_step_1():
@@ -63,15 +62,3 @@ class ChainingTestCase(TestCase):
 
         r = st.execute()
         self.assertEqual(None, r)
-
-    @staticmethod
-    def _setUpStripping():
-        tmp_dir = f"/tmp/{str(uuid.uuid4())}/cache/"
-
-        st, context = setup_stripping(tmp_dir)
-
-        # Resetting lists to prevent cross-test contamination
-        st.steps = list()
-        st.chain_steps = list()
-
-        return st, context

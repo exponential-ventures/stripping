@@ -25,6 +25,7 @@ from tempfile import TemporaryFile
 
 import numpy as np
 from catalysis.storage import StorageClient
+from pandas import DataFrame
 
 from stripping.elemental import Elemental
 from .cache import StepCache
@@ -183,7 +184,13 @@ class Stripping:
                     else:
                         result = step_fn(*args, **kwargs)
 
-                return result or previous_result
+                # Explicit type check necessary since object based 'truth' values are unreliable (ie bool(pd.DataFrame))
+                if result is not None:
+                    return result
+
+                # Explicit type check necessary since object based 'truth' values are unreliable (ie bool(pd.DataFrame))
+                if previous_result is not None:
+                    return previous_result
 
             wrapper.code = inspect.getsource(step_fn)
             wrapper.name = step_fn.__name__
@@ -202,7 +209,14 @@ class Stripping:
         return self.step(*args, **kwargs)
 
     def elemental_step(self, name: str):
-        self.elemental = Elemental(name)
+        if len(self.steps) < 1:
+            raise RuntimeError("Elemental needs at least one step to provide it's dataset.")
+
+        ds = asyncio.get_event_loop().run_until_complete(self.cache.execute_or_retrieve(self.steps[-1]))
+        if not isinstance(ds, DataFrame):
+            raise RuntimeError("Last step does not return a valid pandas.DataFrame object to use in Elemental")
+
+        self.elemental = Elemental(name, ds=ds)
 
     def execute(self):
         return asyncio.get_event_loop().run_until_complete(self._execute())
