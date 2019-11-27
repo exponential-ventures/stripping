@@ -1,3 +1,4 @@
+import os
 import unittest
 import uuid
 
@@ -72,3 +73,23 @@ class StepIntegrationCase(unittest.TestCase):
             self.assertIn("MIN \nAge \t 0-17 \nCity_Category \t A \nOccupation \t 1 \nPurchase \t 5378", contents)
             self.assertIn("MAX \nAge \t 51-55 \nCity_Category \t C \nOccupation \t 20 \nPurchase \t 19614", contents)
             self.assertIn("STD \nOccupation \t 6.061960773631964 \nPurchase \t 4034.0018605010973", contents)
+
+    def test_run_stripping_without_analysis(self):
+        st, _ = set_up_stripping_for_tests()
+        report_path = f"/tmp/{str(uuid.uuid4())}-report.txt"
+
+        @st.step
+        def load_ds():
+            df = pd.read_csv('datasets/black_friday.csv', nrows=20)
+            df['Occupation'] = df['Occupation'].astype(int)
+            df['Purchase'] = df['Purchase'].astype(int)
+
+            return df
+
+        st.elemental_step("report name", path=report_path, report_type=FILE)
+        st.run_elemental = False
+
+        st.execute()
+
+        with self.assertRaises(FileNotFoundError):
+            os.stat(report_path)

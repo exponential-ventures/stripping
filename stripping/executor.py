@@ -154,6 +154,7 @@ class Stripping:
     cache = None
     _elemental_columns = list()
     _elemental_filters = list()
+    run_elemental = True
 
     def __init__(self, cache_dir: str, catalysis_credential_name: str = ''):
         self.cache = StepCache(cache_dir, catalysis_credential_name)
@@ -181,6 +182,9 @@ class Stripping:
                         previous_result = await last_step()
                     else:
                         previous_result = last_step()
+
+                if is_elemental and self.run_elemental is False:
+                    return
 
                 if is_elemental:
 
