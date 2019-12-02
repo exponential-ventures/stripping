@@ -65,6 +65,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/_static/
 
 # PyBuilder
 target/
@@ -111,4 +112,11 @@ venv.bak/
 
 docker/data/
 
+# Steps cache
 .stripping
+
+.DS_Store
+
+# Logs
+/log/*
+!/log/.keep
