@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 from math import e
+import logging
+
+logging = logging.getLogger('stripping')
 
 
 def avg(dataframe):
@@ -34,9 +37,12 @@ def count_notnull(dataframe):
 def max_length(dataframe):
     measurer = np.vectorize(len)
     columns_max_length = {}
-    aux = dataframe.select_dtypes(exclude=['int', 'bool', 'float64'])
+    aux = dataframe.select_dtypes(exclude=['int', 'bool', 'float64', 'int64'])
     for k in aux.keys():
-        columns_max_length[k] = measurer(aux[k]).max()
+        try:
+            columns_max_length[k] = measurer(aux[k]).max()
+        except Exception as err:
+            logging.error(f"Elemental filter max_length, columns {k}, {str(err)}")
 
     return columns_max_length
 
@@ -44,9 +50,12 @@ def max_length(dataframe):
 def min_length(dataframe):
     measurer = np.vectorize(len)
     columns_min_length = {}
-    aux = dataframe.select_dtypes(exclude=['int', 'bool', 'float64'])
+    aux = dataframe.select_dtypes(exclude=['int', 'bool', 'float64', 'int64'])
     for k in aux.keys():
-        columns_min_length[k] = measurer(aux[k]).min()
+        try:
+            columns_min_length[k] = measurer(aux[k]).min()
+        except Exception as err:
+            logging.error(f"Elemental filter min_length, columns {k}, {str(err)}")
 
     return columns_min_length
 
@@ -54,9 +63,12 @@ def min_length(dataframe):
 def avg_length(dataframe):
     measurer = np.vectorize(len)
     columns_avg_length = {}
-    aux = dataframe.select_dtypes(exclude=['int', 'bool', 'float64'])
+    aux = dataframe.select_dtypes(exclude=['int', 'bool', 'float64', 'int64'])
     for k in aux.keys():
-        columns_avg_length[k] = measurer(aux[k]).mean()
+        try:
+            columns_avg_length[k] = measurer(aux[k]).mean()
+        except Exception as err:
+            logging.error(f"Elemental filter min_length, columns {k}, {str(err)}")
 
     return columns_avg_length
 
