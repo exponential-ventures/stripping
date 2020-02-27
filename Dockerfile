@@ -15,7 +15,7 @@ COPY requirements.txt /usr/src/app/
 # This must be done on a per-layer basis, the DNS config will not be maintained on the next layers
 RUN echo "nameserver 10.7.21.1" > /etc/resolv.conf  && \
     echo "search xnv.io" >> /etc/resolv.conf && \
-    pip install -r /usr/src/app/requirements.txt
+    pip install --extra-index-url https://l337.xnv.io:443/ -r /usr/src/app/requirements.txt
 
 COPY . /usr/src/app/
 
