@@ -1,81 +1,92 @@
-from math import e
-
 import numpy as np
 import pandas as pd
+from math import e
+import logging
+
+logging = logging.getLogger('stripping')
 
 
-def avg(df: pd.DataFrame):
-    return df.mean()
+def avg(dataframe):
+    return dataframe.mean()
 
 
-def std(df: pd.DataFrame):
-    return df.std()
+def std(dataframe):
+    return dataframe.std()
 
 
-def max(df: pd.DataFrame):
-    return df.max()
+def max(dataframe):
+    return dataframe.max()
 
 
-def min(df: pd.DataFrame):
-    return df.min()
+def min(dataframe):
+    return dataframe.min()
 
 
-def count(df: pd.DataFrame):
-    return df.count()
+def count(dataframe):
+    return dataframe.count()
 
 
-def count_null(df: pd.DataFrame):
-    return df.isnull().sum()
+def count_null(dataframe):
+    return dataframe.isnull().sum()
 
 
-def count_notnull(df: pd.DataFrame):
-    return df.notnull().sum()
+def count_notnull(dataframe):
+    return dataframe.notnull().sum()
 
 
-def max_length(df: pd.DataFrame):
+def max_length(dataframe):
     measurer = np.vectorize(len)
     columns_max_length = {}
-    aux = df.select_dtypes(exclude=['int', 'bool', 'float64'])
+    aux = dataframe.select_dtypes(exclude=['int', 'bool', 'float64', 'int64'])
     for k in aux.keys():
-        columns_max_length[k] = measurer(aux[k]).max()
+        try:
+            columns_max_length[k] = measurer(aux[k]).max()
+        except Exception as err:
+            logging.error(f"Elemental filter max_length, columns {k}, {str(err)}")
 
     return columns_max_length
 
 
-def min_length(df: pd.DataFrame):
+def min_length(dataframe):
     measurer = np.vectorize(len)
     columns_min_length = {}
-    aux = df.select_dtypes(exclude=['int', 'bool', 'float64'])
+    aux = dataframe.select_dtypes(exclude=['int', 'bool', 'float64', 'int64'])
     for k in aux.keys():
-        columns_min_length[k] = measurer(aux[k]).min()
+        try:
+            columns_min_length[k] = measurer(aux[k]).min()
+        except Exception as err:
+            logging.error(f"Elemental filter min_length, columns {k}, {str(err)}")
 
     return columns_min_length
 
 
-def avg_length(df: pd.DataFrame):
+def avg_length(dataframe):
     measurer = np.vectorize(len)
     columns_avg_length = {}
-    aux = df.select_dtypes(exclude=['int', 'bool', 'float64'])
+    aux = dataframe.select_dtypes(exclude=['int', 'bool', 'float64', 'int64'])
     for k in aux.keys():
-        columns_avg_length[k] = measurer(aux[k]).mean()
+        try:
+            columns_avg_length[k] = measurer(aux[k]).mean()
+        except Exception as err:
+            logging.error(f"Elemental filter min_length, columns {k}, {str(err)}")
 
     return columns_avg_length
 
 
-def number_uniques(df: pd.DataFrame):
-    return df.nunique()
+def number_uniques(dataframe):
+    return dataframe.nunique()
 
 
-def memory_size(df: pd.DataFrame):
-    return df.memory_usage(deep=True, index=False)
+def memory_size(dataframe):
+    return dataframe.memory_usage(deep=True, index=False)
 
 
-def memory_avg(df: pd.DataFrame):
-    number_of_rows = df.shape[0]
+def memory_avg(dataframe):
+    number_of_rows = dataframe.shape[0]
     avg_types = {}
     types = ['int', 'int64', 'bool', 'float64', 'float32']
-    for k in df.keys():
-        field = df[k]
+    for k in dataframe.keys():
+        field = dataframe[k]
         if field.dtype not in types:
             avg_types[k] = field.memory_usage(deep=True) / number_of_rows
         else:
@@ -84,56 +95,52 @@ def memory_avg(df: pd.DataFrame):
     return avg_types
 
 
-def describe(df: pd.DataFrame):
-    return df.describe()
+def describe(dataframe):
+    return dataframe.describe()
 
 
-def sample(df: pd.DataFrame):
-    return df.sample(n=20)
+def sample(dataframe):
+    return dataframe.sample(n=20)
 
 
-def median(df: pd.DataFrame):
-    return df.median()
+def median(dataframe):
+    return dataframe.median()
 
 
-def gini_index(df: pd.DataFrame):
+def gini_index(dataframe):
     gini_index = {}
-    for k in df.keys():
-        probabilities = df[k].value_counts(normalize=True)
-        gini_index[k] = 1 - np.sum(np.square(probabilities))
+    for k in dataframe.keys():
+        probalities = dataframe[k].value_counts(normalize=True)
+        gini_index[k] = 1 - np.sum(np.square(probalities))
 
     return gini_index
 
 
-def entropy_gain(df: pd.DataFrame):
+def entrophy_gain(dataframe):
     gain = {}
-    for k in df.keys():
+    for k in dataframe.keys():
         base = None
-        value_counts = df[k].value_counts(normalize=True, sort=False)
+        value_counts = dataframe[k].value_counts(normalize=True, sort=False)
         base = e if base is None else base
         gain[k] = -(value_counts * np.log(value_counts) / np.log(base)).sum()
     return gain
 
 
-def entropy_index(df: pd.DataFrame):
+def entrophy_index(dataframe):
     index = {}
-    for k in df.keys():
-        probabilities = df[k].value_counts(normalize=True)
-        index[k] = -1 * np.sum(np.log2(probabilities) * probabilities)
+    for k in dataframe.keys():
+        probalities = dataframe[k].value_counts(normalize=True)
+        index[k] = -1 * np.sum(np.log2(probalities) * probalities)
     return index
 
 
-def frequency(df: pd.DataFrame):
+def frequency(dataframe):
     frequencies = {}
-    for k in df.keys():
-        frequencies[k] = df[k].value_counts().to_dict()
+    for k in dataframe.keys():
+        frequencies[k] = dataframe[k].value_counts().to_dict()
 
     return frequencies
 
 
-def field_types(df: pd.DataFrame):
-    return df.dtypes
-
-
-filters = [avg, std, max, min, count, count_null, count_notnull, median, entropy_index, entropy_gain, gini_index,
-           frequency, field_types, max_length, min_length, avg_length, number_uniques, memory_size, memory_avg, sample]
+filters = [avg, std, max, min, count, count_null, count_notnull, median, entrophy_index, entrophy_gain, gini_index,
+           frequency, max_length, min_length, avg_length, number_uniques, memory_size, memory_avg, sample]

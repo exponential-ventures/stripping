@@ -16,6 +16,7 @@
 ## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
 
+import json
 from pandas.core.frame import DataFrame
 from datetime import datetime
 
@@ -23,8 +24,9 @@ from catalysis.storage import StorageClient
 
 STOUT = 'stdout'
 FILE = 'file'
+JSON = 'json'
 
-FORMATS = [STOUT, FILE]
+FORMATS = [STOUT, FILE, JSON]
 
 
 class Elemental:
@@ -72,14 +74,20 @@ class Elemental:
 
             print(self._generate_report(self._report_name))
 
-        elif self._report_type == FILE:
+        elif self._report_type in [FILE, JSON]:
 
             if self._catalysis_client is None:
                 with open(self._path, '+w') as f:
-                    f.write(self._generate_report(self._report_name))
+                    if self._report_type == JSON:
+                        f.write(self._generate_json_report(self._report_name))
+                    else:
+                        f.write(self._generate_report(self._report_name))
             else:
                 with self._catalysis_client.open(self._path, '+w') as f:
-                    f.write(self._generate_report(self._report_name))
+                    if self._report_type == JSON:
+                        f.write(self._generate_json_report(self._report_name))
+                    else:
+                        f.write(self._generate_report(self._report_name))
 
     def _generate_report(self, report_name: str) -> str:
         report = f"\n\n===================== {report_name.upper()} =====================\n"
@@ -93,6 +101,17 @@ class Elemental:
         report += f"===================== GENERATED AT: {datetime.now()} =====================\n"
 
         return report
+
+    def _generate_json_report(self, report_name: str) -> str:
+        report = {'name': report_name}
+        if self.statistics:
+            for key in self.statistics:
+                report[key] = {}
+                for k in self.statistics[key].keys():
+                    report[key][k] = str(self.statistics[key][k])
+
+        report['generated_at'] = str(datetime.now())
+        return json.dumps(report)
 
     def _field_infererence(self, dataframe):
         dataframe.infer_objects()
