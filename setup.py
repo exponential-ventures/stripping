@@ -20,7 +20,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='stripping',
-    version='0.1.2',
+    version='0.1.3',
     description='An easy to use pipeline solution for AI/ML experiments',
     author='Adriano Marques, Nathan Martins, Thales Ribeiro',
     author_email='adriano@xnv.io, nathan@xnv.io, thales@xnv.io',

@@ -114,4 +114,4 @@ class Elemental:
         return json.dumps(report)
 
     def _field_infererence(self, dataframe):
-        dataframe.infer_objects()
+        df.infer_objects()
