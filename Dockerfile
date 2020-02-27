@@ -1,12 +1,12 @@
-FROM k2so.xnv.io/numpy
+FROM python:3.7.3-slim
 
 ENV LANG C.UTF-8
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONPATH "${PYTHONPATH}:/usr/src/app/"
 
-LABEL version="0.1"
-LABEL description="Stripping container"
-LABEL maintainer="Stripping Authors"
+RUN pip install --upgrade pip
+RUN apt-get update
+RUN apt-get install -y gcc curl ca-certificates bash gcc git
 
 WORKDIR /usr/src/app/
 COPY requirements.txt /usr/src/app/
