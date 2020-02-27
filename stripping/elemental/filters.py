@@ -1,6 +1,7 @@
+from math import e
+
 import numpy as np
 import pandas as pd
-from math import e
 
 
 def avg(df: pd.DataFrame):
@@ -130,5 +131,9 @@ def frequency(df: pd.DataFrame):
     return frequencies
 
 
+def field_types(df: pd.DataFrame):
+    return df.dtypes
+
+
 filters = [avg, std, max, min, count, count_null, count_notnull, median, entropy_index, entropy_gain, gini_index,
-           frequency, max_length, min_length, avg_length, number_uniques, memory_size, memory_avg, sample]
+           frequency, field_types, max_length, min_length, avg_length, number_uniques, memory_size, memory_avg, sample]
