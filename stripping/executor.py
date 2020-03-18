@@ -24,6 +24,7 @@ import pickle
 from tempfile import TemporaryFile
 
 import numpy as np
+import pandas as pd
 from catalysis.storage import StorageClient
 
 from .cache import StepCache
@@ -62,6 +63,8 @@ class Context:
         raise AttributeError(f"Attribute '{attr_name}' was not found.")
 
     def serialize(self) -> None:
+
+
         for attr in dir(self):
             if attr.startswith("_") or attr == 'self':
                 continue
@@ -87,13 +90,19 @@ class Context:
                         logging.debug(f"Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
                         attr_file.write(pickle.dumps(attribute))
             else:
-                with open(context_file_name, 'wb') as attr_file:
-                    if isinstance(attribute, np.ndarray):
-                        logging.debug(f"Context Attribute '{attr}' is a numpy array.")
-                        np.save(attr_file, attribute)
-                    else:
-                        logging.debug(f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
-                        pickle.dump(attribute, attr_file)
+
+                if isinstance(attribute, pd.DataFrame):
+                        logging.debug(f"Context Attribute '{attr}' is a Pandas DataFrame")
+                        attribute.to_pickle(context_file_name)
+                else:
+
+                    with open(context_file_name, 'wb') as attr_file:
+                        if isinstance(attribute, np.ndarray):
+                            logging.debug(f"Context Attribute '{attr}' is a numpy array.")
+                            np.save(attr_file, attribute)
+                        else:
+                            logging.debug(f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
+                            pickle.dump(attribute, attr_file)
 
     def deserialize(self) -> None:
 

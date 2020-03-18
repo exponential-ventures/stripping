@@ -113,5 +113,6 @@ class Elemental:
         report['generated_at'] = str(datetime.now())
         return json.dumps(report)
 
-    def _field_infererence(self, dataframe):
+    @staticmethod
+    def _field_infererence(df):
         df.infer_objects()
