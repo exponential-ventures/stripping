@@ -56,10 +56,10 @@ class Context:
         else:
 
             if os.path.exists(attr_file_name):
-                self._deserialize(attr_file_name)
-                return getattr(self, attr_name)
+                res = self._deserialize(attr_file_name)
+                setattr(self, attr_name, res)
+                return res
 
-        logging.warning(f"Attribute '{attr_name}' was not found.")
         raise AttributeError(f"Attribute '{attr_name}' was not found.")
 
     def serialize(self) -> None:
@@ -115,9 +115,10 @@ class Context:
                 self._deserialize(os.path.join(self.__context_location, attr_file_name))
 
     def _deserialize(self, attr_file_name):
-        logging.info(f"Deserializing context attribute from '{attr_file_name}'")
+        logging.debug(f"Deserializing context attribute from '{attr_file_name}'")
 
         # TODO Refactor this to be more elegant
+        # TODO Add 'pd.read_pickle' support
         if self.catalysis_client is not None:
             with self.catalysis_client.open(attr_file_name, 'rb') as attr_file:
                 try:
@@ -133,23 +134,24 @@ class Context:
         else:
 
             try:
-                logging.debug(f"Attempting to deserialize '{attr_file_name}' with pd.read_pickle...")
-                setattr(self, attr_file_name, pd.read_pickle(attr_file_name))
-                logging.debug(
-                    f"Successfully deserialized '{attr_file_name}' as a python object of "
-                    f"type '{type(getattr(self, attr_file_name))}'")
+                return pd.read_pickle(attr_file_name)
             except:
+
+                deserializing_methods = [
+                    pickle.load,
+                    np.load,
+                ]
+
                 with open(attr_file_name, 'rb') as attr_file:
-                    try:
-                        logging.debug(f"Attempting to deserialize '{attr_file_name}' with pickle...")
-                        setattr(self, attr_file_name, pickle.load(attr_file))
-                        logging.debug(
-                            f"Successfully deserialized '{attr_file_name}' as a python object of "
-                            f"type '{type(getattr(self, attr_file_name))}'")
-                    except Exception:
-                        logging.debug(f"Attempting to deserialize '{attr_file_name}' with numpy...")
-                        setattr(self, attr_file_name, np.load(attr_file))
-                        logging.debug(f"Successfully deserialized '{attr_file_name}' as a numpy array.")
+
+                    for m in deserializing_methods:
+
+                        try:
+                            return m(attr_file)
+                        except:
+                            pass
+
+                raise AttributeError(f"Unable to deserialize {attr_file}")
 
 
 @SingletonDecorator

@@ -9,20 +9,20 @@ import asynctest
 current_dir = Path(__file__).parent.absolute()
 
 
-class TestWeirdBug(asynctest.TestCase):
+class TestAttrFileDeserializing(asynctest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(os.path.join(current_dir, "log"), ignore_errors=True)
-        os.remove(os.path.join(current_dir, "bug.py"))
+        os.remove(os.path.join(current_dir, "attr_access.py"))
 
     def setUp(self) -> None:
         os.mkdir(os.path.join(current_dir, "log"))
 
-    def test_bug(self):
-        copyfile(os.path.join(current_dir, "non_buggy_script.py"), os.path.join(current_dir, "bug.py"))
+    def test_accessing_serialized_attrs(self):
+        copyfile(os.path.join(current_dir, "pre_attr_access.py"), os.path.join(current_dir, "attr_access.py"))
 
         proc = subprocess.Popen(
-            ["python", "bug.py"],
+            ["python", "attr_access.py"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False,
@@ -31,16 +31,21 @@ class TestWeirdBug(asynctest.TestCase):
         _, error = proc.communicate()
         self.assertEqual(error, b'')
 
-        copyfile(os.path.join(current_dir, "buggy_script.py"), os.path.join(current_dir, "bug.py"))
+        copyfile(os.path.join(current_dir, "post_attr_access.py"), os.path.join(current_dir, "attr_access.py"))
 
         proc = subprocess.Popen(
-            ["python", "bug.py"],
+            ["python", "attr_access.py"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False,
             cwd=current_dir,
         )
 
-        _, error = proc.communicate()
-        print(error)
-        # self.assertEqual(error, b'')
+        out, error = proc.communicate()
+
+        if error != b'':
+            print(error.decode())
+        else:
+            print(out.decode())
+
+        self.assertEqual(error, b'')
