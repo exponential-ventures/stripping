@@ -64,7 +64,6 @@ class Context:
 
     def serialize(self) -> None:
 
-
         for attr in dir(self):
             if attr.startswith("_") or attr == 'self':
                 continue
@@ -92,8 +91,8 @@ class Context:
             else:
 
                 if isinstance(attribute, pd.DataFrame):
-                        logging.debug(f"Context Attribute '{attr}' is a Pandas DataFrame")
-                        attribute.to_pickle(context_file_name)
+                    logging.debug(f"Context Attribute '{attr}' is a Pandas DataFrame")
+                    attribute.to_pickle(context_file_name)
                 else:
 
                     with open(context_file_name, 'wb') as attr_file:
@@ -101,7 +100,8 @@ class Context:
                             logging.debug(f"Context Attribute '{attr}' is a numpy array.")
                             np.save(attr_file, attribute)
                         else:
-                            logging.debug(f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
+                            logging.debug(
+                                f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
                             pickle.dump(attribute, attr_file)
 
     def deserialize(self) -> None:
@@ -131,17 +131,25 @@ class Context:
                     setattr(self, attr_file_name, np.load(attr_file))
                     logging.debug(f"Successfully deserialized '{attr_file_name}' as a numpy array.")
         else:
-            with open(attr_file_name, 'rb') as attr_file:
-                try:
-                    logging.debug(f"Attempting to deserialize '{attr_file_name}' with pickle...")
-                    setattr(self, attr_file_name, pickle.load(attr_file))
-                    logging.debug(
-                        f"Successfully deserialized '{attr_file_name}' as a python object of "
-                        f"type '{type(getattr(self, attr_file_name))}'")
-                except Exception:
-                    logging.debug(f"Attempting to deserialize '{attr_file_name}' with numpy...")
-                    setattr(self, attr_file_name, np.load(attr_file))
-                    logging.debug(f"Successfully deserialized '{attr_file_name}' as a numpy array.")
+
+            try:
+                logging.debug(f"Attempting to deserialize '{attr_file_name}' with pd.read_pickle...")
+                setattr(self, attr_file_name, pd.read_pickle(attr_file_name))
+                logging.debug(
+                    f"Successfully deserialized '{attr_file_name}' as a python object of "
+                    f"type '{type(getattr(self, attr_file_name))}'")
+            except:
+                with open(attr_file_name, 'rb') as attr_file:
+                    try:
+                        logging.debug(f"Attempting to deserialize '{attr_file_name}' with pickle...")
+                        setattr(self, attr_file_name, pickle.load(attr_file))
+                        logging.debug(
+                            f"Successfully deserialized '{attr_file_name}' as a python object of "
+                            f"type '{type(getattr(self, attr_file_name))}'")
+                    except Exception:
+                        logging.debug(f"Attempting to deserialize '{attr_file_name}' with numpy...")
+                        setattr(self, attr_file_name, np.load(attr_file))
+                        logging.debug(f"Successfully deserialized '{attr_file_name}' as a numpy array.")
 
 
 @SingletonDecorator
