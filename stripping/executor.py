@@ -21,6 +21,7 @@ import inspect
 import logging
 import os
 import pickle
+import sys
 from tempfile import TemporaryFile
 
 import numpy as np
@@ -30,6 +31,13 @@ from .cache import StepCache
 from .singleton import SingletonDecorator
 
 logging = logging.getLogger('stripping')
+
+try:
+    import aurum as au
+except ImportError as error:
+    logging.warn(f"Not using Aurum: {str(error)}")
+except Exception as error:
+    pass
 
 
 @SingletonDecorator
@@ -181,6 +189,7 @@ class Stripping:
                     else:
                         result = step_fn(*args, **kwargs)
 
+                self.commit_aurum(step_fn.__name__)
                 return result or previous_result
 
             wrapper.code = inspect.getsource(step_fn)
@@ -221,3 +230,8 @@ class Stripping:
                     return previous_step
 
         return None
+
+    @staticmethod
+    def commit_aurum(step_name: str) -> None:
+        if 'au' in sys.modules:
+            au.base.git.commit(step_name)
