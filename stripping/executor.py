@@ -235,3 +235,4 @@ class Stripping:
     def commit_aurum(step_name: str) -> None:
         if 'au' in sys.modules:
             au.base.git.commit(step_name)
+            logging.info(f"step {step_name} has been saved in the Aurum's repository")
