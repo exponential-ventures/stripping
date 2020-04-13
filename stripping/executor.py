@@ -189,7 +189,6 @@ class Stripping:
                     else:
                         result = step_fn(*args, **kwargs)
 
-                self.commit_aurum(step_fn.__name__)
                 return result or previous_result
 
             wrapper.code = inspect.getsource(step_fn)
@@ -216,7 +215,9 @@ class Stripping:
         result = None
 
         for i in range(len(self.steps)):
-            result = await self.cache.execute_or_retrieve(self.steps[i])
+            step = self.steps[i]
+            result = await self.cache.execute_or_retrieve(step)
+            self.commit_aurum(step.name)
 
         return result
 
