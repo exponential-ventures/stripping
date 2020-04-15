@@ -20,12 +20,12 @@ from setuptools import setup, find_packages
 
 setup(
     name='stripping',
-    version='0.1.5',
+    version='0.1.6',
     description='An easy to use pipeline solution for AI/ML experiments',
     author='Adriano Marques, Nathan Martins, Thales Ribeiro',
     author_email='adriano@xnv.io, nathan@xnv.io, thales@xnv.io',
     python_requires='>=3.7.0',
-    install_requires=['catalysis-client>=1.0.1', 'numpy>=1.18.1', 'pandas>=1.0.1'],
+    install_requires=['catalysis-client', 'numpy'],
     include_package_data=True,
     url='https://github.com/exponential-ventures/stripping',
     packages=find_packages(exclude=['*tests*', 'test*']),
