@@ -253,7 +253,15 @@ class Stripping:
 
     @staticmethod
     def commit_aurum(step_name: str) -> None:
-        if 'au' in sys.modules:
-            au.base.git.commit(step_name)
-            au.base.git.push()
-            logging.info(f"step {step_name} has been saved in the Aurum's repository")
+        if 'aurum' in sys.modules.keys():
+            au.base.git.add_dirs(['.'])
+            au.base.git.commit(
+                commit_message=f"Auto commit step:{step_name}",
+            )
+            logging.info(f"step {step_name} has been committed in the repository")
+            try:
+                au.base.git.push()
+                logging.info(f"step {step_name} has been saved in the remote repository")
+            except au.base.git.GitCommandError as e:
+                logging.warning(f"failed to push to remote repository: {e}")
+
