@@ -14,9 +14,9 @@
 ## If you do not have a written authorization to read this code
 ## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
+
 import asyncio
 import hashlib
-import logging
 import os
 import pickle
 import sys
@@ -24,11 +24,13 @@ from pathlib import Path
 from tempfile import TemporaryFile
 from typing import Iterable
 
-from catalysis.storage import StorageClient
+CATALYSIS_ON = True
+try:
+    from catalysis.storage import StorageClient
+except ImportError:
+    CATALYSIS_ON = False
 
 from .exceptions import StepNotCached
-
-LOG = logging.getLogger('stripping')
 
 
 class CacheStorage:
@@ -38,7 +40,7 @@ class CacheStorage:
     def __init__(self, cache_dir: str, catalysis_credential_name: str = '') -> None:
         self.cache_dir = cache_dir
 
-        if catalysis_credential_name != '':
+        if catalysis_credential_name != '' and CATALYSIS_ON:
             self.catalysis_client = StorageClient(catalysis_credential_name)
         else:
             self.catalysis_client = None

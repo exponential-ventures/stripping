@@ -19,7 +19,6 @@
 import asyncio
 import datetime
 import inspect
-import logging
 import os
 import shutil
 import sys
@@ -28,11 +27,17 @@ from glob import glob
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
 from .storage import CacheStorage
-from catalysis.storage.storage_client import StorageClient
+from .logging import logger
+
+CATALYSIS_ON = True
+try:
+    from catalysis.storage.storage_client import StorageClient
+except ImportError:
+    CATALYSIS_ON = False
+
 
 ACCESS = 'access'
 DIR_PATH = 'path'
-logging = logging.getLogger('stripping')
 
 
 @SingletonDecorator
@@ -62,7 +67,7 @@ class StepCache:
         try:
             return self.storage.get_step(step_fn.name, step_fn.code, self.context, *args, **kwargs)
         except StepNotCached:
-            logging.info(f"Step '{step_fn.name}' is not cached. Executing...")
+            logger.info(f"Step '{step_fn.name}' is not cached. Executing...")
 
             if inspect.iscoroutinefunction(step_fn):
                 step_return = await step_fn(*args, **kwargs)
@@ -83,22 +88,22 @@ class CacheInvalidation:
         self.__cached_dirs = {}
         self.catalysis_client = None
 
-        if catalysis_credential_name != '':
+        if catalysis_credential_name != '' and CATALYSIS_ON:
             self.catalysis_client = StorageClient(catalysis_credential_name)
 
     def add_dir(self, cache_dir):
         self.__cached_dirs[cache_dir] = {}
 
     async def force_delete(self, cache_dir):
-        logging.info('Attempting to delete {}'.format(cache_dir))
+        logger.info('Attempting to delete {}'.format(cache_dir))
 
         if self.catalysis_client:
             with self.catalysis_client.open(cache_dir) as remote:
                 await remote.delete()
-                logging.info('<!> {} deleted'.format(cache_dir))
+                logger.info('<!> {} deleted'.format(cache_dir))
         else:
             shutil.rmtree(cache_dir, ignore_errors=True)
-            logging.info('<!> {} deleted'.format(cache_dir))
+            logger.info('<!> {} deleted'.format(cache_dir))
 
         if cache_dir in self.__cached_dirs:
             del(self.__cached_dirs[cache_dir])

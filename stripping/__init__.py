@@ -16,20 +16,24 @@
 ##
 import os
 
-from catalysis.common.configuration import ClientConfiguration
+
+CATALYSIS_ON = True
+try:
+    from catalysis.common.configuration import ClientConfiguration
+except ImportError:
+    CATALYSIS_ON = False
+
 
 from .cache import StepCache
 from .executor import Stripping, Context
-from .logging import Logging
-
-logging = Logging().get_logger()
+from .logging import logger
 
 
 def setup_stripping(cache_dir: str = None):
     if cache_dir is None:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         cache_dir = os.path.join(current_dir, 'stripping_cache')
-        logging.info(f"No cache_dir was specified, using default location: {cache_dir}")
+        logger.info(f"No cache_dir was specified, using default location: {cache_dir}")
 
     st, c = Stripping(cache_dir), Context()
     st.cache.register_context(c)
@@ -37,6 +41,9 @@ def setup_stripping(cache_dir: str = None):
 
 
 def setup_stripping_with_catalysis(catalysis_credential_name: str, cache_dir: str = None):
+    if not CATALYSIS_ON:
+        raise Exception("Catalysis is not installed. Run pip install catalysis first.")
+
     if cache_dir is None:
         cache_dir = fetch_catalysis_default_location(catalysis_credential_name)
 

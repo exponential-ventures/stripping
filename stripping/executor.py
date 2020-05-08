@@ -18,7 +18,6 @@
 
 import asyncio
 import inspect
-import logging
 import os
 import pickle
 import sys
@@ -26,17 +25,22 @@ from tempfile import TemporaryFile
 
 import numpy as np
 import pandas as pd
-from catalysis.storage import StorageClient
+
+CATALYSIS_ON = True
+StorageClient = None
+try:
+    from catalysis.storage import StorageClient
+except ImportError:
+    CATALYSIS_ON = False
 
 from .cache import StepCache
 from .singleton import SingletonDecorator
-
-logging = logging.getLogger('stripping')
+from .logging import logger
 
 try:
     import aurum as au
 except ImportError as error:
-    logging.warn(f"Not using Aurum: {str(error)}")
+    logger.warn(f"Not using Aurum: {str(error)}")
 except Exception as error:
     pass
 
@@ -80,35 +84,36 @@ class Context:
             if inspect.ismethod(attribute):
                 continue
 
-            if isinstance(attribute, StorageClient):
-                continue
+            if CATALYSIS_ON:
+                if isinstance(attribute, StorageClient):
+                    continue
 
             context_file_name = os.path.join(self.__context_location, attr)
-            logging.info(f"Serializing context attribute '{attr}' to '{context_file_name}'...")
+            logger.info(f"Serializing context attribute '{attr}' to '{context_file_name}'...")
             if self.catalysis_client is not None:
                 with self.catalysis_client.open(context_file_name, 'wb') as attr_file:
                     if isinstance(attribute, np.ndarray):
-                        logging.debug(f"Context Attribute '{attr}' is a numpy array.")
+                        logger.debug(f"Context Attribute '{attr}' is a numpy array.")
                         outfile = TemporaryFile()
                         np.save(outfile, attribute)
                         with open(outfile) as tf:
                             attr_file.write(tf.read())
                     else:
-                        logging.debug(f"Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
+                        logger.debug(f"Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
                         attr_file.write(pickle.dumps(attribute))
             else:
 
                 if isinstance(attribute, pd.DataFrame):
-                    logging.debug(f"Context Attribute '{attr}' is a Pandas DataFrame")
+                    logger.debug(f"Context Attribute '{attr}' is a Pandas DataFrame")
                     attribute.to_pickle(context_file_name)
                 else:
 
                     with open(context_file_name, 'wb') as attr_file:
                         if isinstance(attribute, np.ndarray):
-                            logging.debug(f"Context Attribute '{attr}' is a numpy array.")
+                            logger.debug(f"Context Attribute '{attr}' is a numpy array.")
                             np.save(attr_file, attribute)
                         else:
-                            logging.debug(
+                            logger.debug(
                                 f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
                             pickle.dump(attribute, attr_file)
 
@@ -123,22 +128,22 @@ class Context:
                 self._deserialize(os.path.join(self.__context_location, attr_file_name))
 
     def _deserialize(self, attr_file_name):
-        logging.debug(f"Deserializing context attribute from '{attr_file_name}'")
+        logger.debug(f"Deserializing context attribute from '{attr_file_name}'")
 
         # TODO Refactor this to be more elegant
         # TODO Add 'pd.read_pickle' support
         if self.catalysis_client is not None:
             with self.catalysis_client.open(attr_file_name, 'rb') as attr_file:
                 try:
-                    logging.debug(f"Attempting to deserialize '{attr_file_name}' with pickle...")
+                    logger.debug(f"Attempting to deserialize '{attr_file_name}' with pickle...")
                     setattr(self, attr_file_name, pickle.load(attr_file))
-                    logging.debug(
+                    logger.debug(
                         f"Successfully deserialized '{attr_file_name}' as a python object of "
                         f"type '{type(getattr(self, attr_file_name))}'")
                 except Exception:
-                    logging.debug(f"Attempting to deserialize '{attr_file_name}' with numpy...")
+                    logger.debug(f"Attempting to deserialize '{attr_file_name}' with numpy...")
                     setattr(self, attr_file_name, np.load(attr_file))
-                    logging.debug(f"Successfully deserialized '{attr_file_name}' as a numpy array.")
+                    logger.debug(f"Successfully deserialized '{attr_file_name}' as a numpy array.")
         else:
 
             try:
@@ -260,13 +265,13 @@ class Stripping:
                 au.base.git.commit(
                     commit_message=f"Auto commit step:{step_name}",
                 )
-                logging.info(f"step {step_name} has been committed in the repository")
+                logger.info(f"step {step_name} has been committed in the repository")
             except au.base.git.GitCommandError as e:
-                logging.warning(f"failed to commit to local repository: {e}")
+                logger.warning(f"failed to commit to local repository: {e}")
                 return
 
             try:
                 au.base.git.push()
-                logging.info(f"step {step_name} has been saved in the remote repository")
+                logger.info(f"step {step_name} has been saved in the remote repository")
             except au.base.git.GitCommandError as e:
-                logging.warning(f"failed to push to remote repository: {e}")
+                logger.warning(f"failed to push to remote repository: {e}")
