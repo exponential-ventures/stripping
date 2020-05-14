@@ -22,6 +22,8 @@ import inspect
 import os
 import shutil
 import sys
+
+from typing import Any
 from glob import glob
 
 from .exceptions import StepNotCached
@@ -51,6 +53,7 @@ class StepCache:
         self.cache_invalidation = CacheInvalidation(catalysis_credential_name)
         self.cache_invalidation.add_dir(self.cache_dir)
 
+        # Add this to the --help of stripping.
         if '-clean' in sys.argv:
             for item in glob('{}/*'.format(cache_dir)):
                 if os.path.isfile(item):
@@ -60,25 +63,35 @@ class StepCache:
 
         # asyncio.ensure_future(self.cache_invalidation.strategy_runner())
 
+
     def register_context(self, context):
         self.context = context
 
-    async def execute_or_retrieve(self, step_fn, *args, **kwargs):
+
+    async def execute(self, step_fn, *args, **kwargs) -> Any:
+        if inspect.iscoroutinefunction(step_fn):
+            step_return = await step_fn(*args, **kwargs)
+        else:
+            step_return = step_fn(*args, **kwargs)
+
+        if not step_fn.skip_cache or not os.environ.get("STRIPPING_SKIP_CACHE", False):
+            self.storage.save_step(
+                step_fn.code, step_return, self.context, *args, **kwargs)
+
+        return step_return
+
+
+    async def execute_or_retrieve(self, step_fn, *args, **kwargs) -> (Any, bool):
+        '''Tries to retrieve step from cache, or execute it if no cache is found.
+        Returns the result of the step and a boolean, which indicates whether the
+        execution was from cache or not. True for cached, False for new execution.
+        '''
         try:
-            return self.storage.get_step(step_fn.name, step_fn.code, self.context, *args, **kwargs)
+            logger.info(f"Checking if step '{step_fn.name}' is cached...")
+            return self.storage.get_step(step_fn.name, step_fn.code, self.context, *args, **kwargs), True
         except StepNotCached:
             logger.info(f"Step '{step_fn.name}' is not cached. Executing...")
-
-            if inspect.iscoroutinefunction(step_fn):
-                step_return = await step_fn(*args, **kwargs)
-            else:
-                step_return = step_fn(*args, **kwargs)
-
-            if not step_fn.skip_cache or not os.environ.get("STRIPPING_SKIP_CACHE", False):
-                self.storage.save_step(
-                    step_fn.code, step_return, self.context, *args, **kwargs)
-
-            return step_return
+            return await self.execute(step_fn, *args, **kwargs), False
 
 
 @SingletonDecorator
@@ -110,8 +123,7 @@ class CacheInvalidation:
 
 
     async def strategy(self):
-        """
-            A Cache is deleted when:
+        """A Cache is deleted when:
                 - it haven't being accessed for 4 months or more.
                 - free disk space reaches <= 15%
         """

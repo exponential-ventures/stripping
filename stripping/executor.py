@@ -21,6 +21,7 @@ import inspect
 import os
 import pickle
 import sys
+from typing import Any
 from tempfile import TemporaryFile
 
 import numpy as np
@@ -176,6 +177,7 @@ class Stripping:
     def __init__(self, cache_dir: str, catalysis_credential_name: str = ''):
         self.cache = StepCache(cache_dir, catalysis_credential_name)
 
+
     def step(self, *args, **kwargs):
         step_fn = None
 
@@ -227,26 +229,41 @@ class Stripping:
 
         return step_decorator(step_fn) if step_fn else step_decorator
 
+
     def chain(self, *args, **kwargs):
         kwargs.update({"chain": True})
         return self.step(*args, **kwargs)
 
+
     def execute(self):
         return asyncio.get_event_loop().run_until_complete(self._execute())
 
-    async def _execute(self):
 
+    async def _execute(self) -> Any:
         result = None
+        invalidate_future_step_cache = False
+        committed = False
 
         for i in range(len(self.steps)):
             step = self.steps[i]
-            result = await self.cache.execute_or_retrieve(step)
-            self.commit_aurum(step.name)
+            logger.info(f"Executing step '{step.name}'...")
+            if invalidate_future_step_cache:
+                step_result = await self.cache.execute(step)
+                cached = False
+            else:
+                step_result, cached = await self.cache.execute_or_retrieve(step)
 
-        return result
+            if not cached and not committed:
+                self.commit_aurum(step.name)
+                invalidate_future_step_cache = True
+                committed = True
+
+        print("")
+        print("-"*80)
+        print("Stripping executed all steps.")
+        return step_result
 
     def get_chained_step(self, current_step):
-
         for i, step in enumerate(self.chain_steps):
             if step.name == current_step.__name__:
 
@@ -256,10 +273,10 @@ class Stripping:
 
         return None
 
+
     @staticmethod
     def commit_aurum(step_name: str) -> None:
         if 'aurum' in sys.modules.keys():
-
             try:
                 au.base.git.add_dirs(['.'])
                 au.base.git.commit(
