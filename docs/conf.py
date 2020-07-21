@@ -20,8 +20,8 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Stripping'
-copyright = '2019, Adirano, Nathan, Thales'
-author = 'Adirano, Nathan, Thales'
+copyright = '2019, Adriano, Nathan, Thales'
+author = 'Adriano, Nathan, Thales'
 
 # The short X.Y version
 version = ''
@@ -134,7 +134,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'Stripping.tex', 'Stripping Documentation',
-     'Adirano, Nathan, Thales', 'manual'),
+     'Adriano, Nathan, Thales', 'manual'),
 ]
 
 

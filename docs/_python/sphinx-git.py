@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 #
 # TODO: extract in a Sphinx plugin
 #
