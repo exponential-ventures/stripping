@@ -33,7 +33,7 @@ setup(
     author_email='adriano@xnv.io, nathan@xnv.io, thales@xnv.io',
     python_requires='>=3.7.0',
     install_requires=['catalysis-client', 'numpy'],
-    include_package_data=True,,
+    include_package_data=True,
     license="GNU LGPLv3",
     url='https://github.com/exponential-ventures/stripping',
     packages=find_packages(exclude=['*tests*', 'test*']),
