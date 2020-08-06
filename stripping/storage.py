@@ -32,7 +32,12 @@ from pathlib import Path
 from tempfile import TemporaryFile
 from typing import Iterable
 
-from catalysis.storage import StorageClient
+try:
+    from catalysis.storage import StorageClient
+
+    has_catalysis = True
+except ImportError:
+    has_catalysis = False
 
 from .exceptions import StepNotCached
 
@@ -46,7 +51,7 @@ class CacheStorage:
     def __init__(self, cache_dir: str, catalysis_credential_name: str = '') -> None:
         self.cache_dir = cache_dir
 
-        if catalysis_credential_name != '':
+        if has_catalysis and catalysis_credential_name != '':
             self.catalysis_client = StorageClient(catalysis_credential_name)
         else:
             self.catalysis_client = None

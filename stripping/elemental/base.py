@@ -23,10 +23,18 @@
 
 
 import json
-from pandas.core.frame import DataFrame
+import logging
 from datetime import datetime
 
-from catalysis.storage import StorageClient
+try:
+    from catalysis.storage import StorageClient
+
+    has_catalysis = True
+except ImportError as error:
+    has_catalysis = False
+    logging.warn(f"Not using Catalysis: {str(error)}")
+except Exception as error:
+    pass
 
 STOUT = 'stdout'
 FILE = 'file'
@@ -52,8 +60,7 @@ class Elemental:
     def filters(self, *filters):
         self.__filters = filters
 
-    def report(self, report_name, path="/tmp/elemental_report.txt", report_type=STOUT,
-               catalysis_client: StorageClient = None):
+    def report(self, report_name, path="/tmp/elemental_report.txt", report_type=STOUT, catalysis_client=None):
         self._path = path
         self._report_type = report_type
         self._report_name = report_name
@@ -88,7 +95,7 @@ class Elemental:
                         f.write(self._generate_json_report(self._report_name))
                     else:
                         f.write(self._generate_report(self._report_name))
-            else:
+            elif has_catalysis:
                 with self._catalysis_client.open(self._path, '+w') as f:
                     if self._report_type == JSON:
                         f.write(self._generate_json_report(self._report_name))
