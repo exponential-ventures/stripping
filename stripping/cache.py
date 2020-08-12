@@ -65,6 +65,17 @@ class StepCache:
         self.context = context
 
     async def execute_or_retrieve(self, step_fn, *args, **kwargs):
+
+        if step_fn.skip_cache or os.environ.get("STRIPPING_SKIP_CACHE", False):
+            logging.info(f"Step '{step_fn.name}' has skip_cache=True. Executing...")
+
+            if inspect.iscoroutinefunction(step_fn):
+                step_return = await step_fn(*args, **kwargs)
+            else:
+                step_return = step_fn(*args, **kwargs)
+
+            return step_return
+
         try:
             return self.storage.get_step(step_fn.name, step_fn.code, self.context, *args, **kwargs)
         except StepNotCached:
@@ -75,9 +86,7 @@ class StepCache:
             else:
                 step_return = step_fn(*args, **kwargs)
 
-            if not step_fn.skip_cache or not os.environ.get("STRIPPING_SKIP_CACHE", False):
-                self.storage.save_step(
-                    step_fn.code, step_return, self.context, *args, **kwargs)
+            self.storage.save_step(step_fn.code, step_return, self.context, *args, **kwargs)
 
             return step_return
 
