@@ -64,7 +64,7 @@ class TestExecutor(asynctest.TestCase):
     def test_step_decorator_with_commits(self):
         set_git_for_test()
         comp_proc = subprocess.run(
-            ["au -v init"],
+            ["au --verbose init"],
             shell=True,
             capture_output=True,
             encoding="utf-8",
@@ -80,7 +80,7 @@ class TestExecutor(asynctest.TestCase):
         )
 
         self.assertEqual(comp_proc.returncode, 0, msg=comp_proc.stderr)
-        self.assertEqual(comp_proc.stdout, "1\n")
+        self.assertEqual(comp_proc.stdout, "2\n")
 
         @self.st.step(skip_cache=False)
         def test_cache():

@@ -26,6 +26,13 @@ from unittest import TestCase
 
 from stripping import setup_stripping, setup_stripping_with_catalysis
 
+try:
+    import catalysis
+
+    has_catalysis = True
+except ImportError:
+    has_catalysis = False
+
 
 class DefaultCacheLocationTestCase(TestCase):
 
@@ -37,8 +44,12 @@ class DefaultCacheLocationTestCase(TestCase):
         )
 
     def test_default_location_with_catalysis(self):
-        st, _ = setup_stripping_with_catalysis(catalysis_credential_name="local")
-        self.assertEqual(
-            "/tmp/list/",
-            st.cache.cache_dir,
-        )
+        if has_catalysis:
+            st, _ = setup_stripping_with_catalysis(catalysis_credential_name="local")
+            self.assertEqual(
+                "/tmp/list/",
+                st.cache.cache_dir,
+            )
+        else:
+            with self.assertRaises(RuntimeError):
+                setup_stripping_with_catalysis(catalysis_credential_name="local")

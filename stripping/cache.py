@@ -34,7 +34,16 @@ from glob import glob
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
 from .storage import CacheStorage
-from catalysis.storage.storage_client import StorageClient
+
+try:
+    from catalysis.storage.storage_client import StorageClient
+
+    has_catalysis = True
+except ImportError as error:
+    has_catalysis = False
+    logging.warn(f"Not using Catalysis: {str(error)}")
+except Exception as error:
+    pass
 
 ACCESS = 'access'
 DIR_PATH = 'path'
@@ -98,7 +107,7 @@ class CacheInvalidation:
         self.__cached_dirs = {}
         self.catalysis_client = None
 
-        if catalysis_credential_name != '':
+        if has_catalysis and catalysis_credential_name != '':
             self.catalysis_client = StorageClient(catalysis_credential_name)
 
     def add_dir(self, cache_dir):
@@ -116,8 +125,7 @@ class CacheInvalidation:
             logging.info('<!> {} deleted'.format(cache_dir))
 
         if cache_dir in self.__cached_dirs:
-            del(self.__cached_dirs[cache_dir])
-
+            del (self.__cached_dirs[cache_dir])
 
     async def strategy(self):
         """
@@ -132,7 +140,7 @@ class CacheInvalidation:
             self.__cached_dirs[d] = {}
             for dir_path in glob('{}/*'.format(d)):
                 self.__cached_dirs[d][dir_path] = {}
-                self.__cached_dirs[d][dir_path][ACCESS] = await self.__last_access( dir_path)
+                self.__cached_dirs[d][dir_path][ACCESS] = await self.__last_access(dir_path)
                 if self.__cached_dirs[d][dir_path][ACCESS] <= three_months_ago_timestamp:
                     await self.force_delete(dir_path)
                 await asyncio.sleep(0.2)
@@ -173,4 +181,3 @@ class CacheInvalidation:
             total = stats.f_frsize * stats.f_blocks
             free = stats.f_frsize * stats.f_bavail
             return (free / total) * 100
-
