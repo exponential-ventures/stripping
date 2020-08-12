@@ -27,12 +27,12 @@ from setuptools import setup, find_packages
 
 setup(
     name='stripping',
-    version='0.1.9',
+    version='0.1.10',
     description='An easy to use pipeline solution for AI/ML experiments',
     author='Adriano Marques, Nathan Martins, Thales Ribeiro',
     author_email='adriano@xnv.io, nathan@xnv.io, thales@xnv.io',
     python_requires='>=3.7.0',
-    install_requires=['catalysis-client', 'numpy'],
+    install_requires=['aurum', 'numpy'],
     include_package_data=True,
     license="GNU LGPLv3",
     url='https://github.com/exponential-ventures/stripping',

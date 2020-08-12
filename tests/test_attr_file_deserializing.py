@@ -45,31 +45,29 @@ class TestAttrFileDeserializing(asynctest.TestCase):
     def test_accessing_serialized_attrs(self):
         copyfile(os.path.join(current_dir, "pre_attr_access.py"), os.path.join(current_dir, "attr_access.py"))
 
-        proc = subprocess.Popen(
+        proc = subprocess.run(
             ["python", "attr_access.py"],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             shell=False,
             cwd=current_dir,
         )
-        _, error = proc.communicate()
-        self.assertEqual(error, b'')
+
+        self.assertEqual(proc.stderr, None)
 
         copyfile(os.path.join(current_dir, "post_attr_access.py"), os.path.join(current_dir, "attr_access.py"))
 
-        proc = subprocess.Popen(
+        proc = subprocess.run(
             ["python", "attr_access.py"],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             shell=False,
             cwd=current_dir,
         )
 
-        out, error = proc.communicate()
-
-        if error != b'':
-            print(error.decode())
+        if proc.stderr and proc.stderr != b'':
+            print(proc.stderr.decode())
         else:
-            print(out.decode())
+            print(proc.stdout.decode())
 
-        self.assertEqual(error, b'')
+        self.assertEqual(proc.stderr, None)

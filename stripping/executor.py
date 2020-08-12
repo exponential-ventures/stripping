@@ -1,24 +1,18 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 ##
-## Authors: Adriano Marques
-##          Nathan Martins
-##          Thales Ribeiro
+## ----------------
+## |              |
+## | CONFIDENTIAL |
+## |              |
+## ----------------
 ##
-## Copyright (C) 2019 Exponential Ventures LLC
+## Copyright Exponential Ventures LLC (C), 2019 All Rights Reserved
 ##
-##    This library is free software; you can redistribute it and/or
-##    modify it under the terms of the GNU Library General Public
-##    License as published by the Free Software Foundation; either
-##    version 2 of the License, or (at your option) any later version.
+## Author: Adriano Marques <adriano@xnv.io>
 ##
-##    This library is distributed in the hope that it will be useful,
-##    but WITHOUT ANY WARRANTY; without even the implied warranty of
-##    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-##    Library General Public License for more details.
-##
-##    You should have received a copy of the GNU Library General Public
-##    License along with this library; if not, write to the Free Software
-##    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+## If you do not have a written authorization to read this code
+## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
 
 
@@ -32,7 +26,6 @@ from tempfile import TemporaryFile
 
 import numpy as np
 import pandas as pd
-from catalysis.storage import StorageClient
 
 from .cache import StepCache
 from .singleton import SingletonDecorator
@@ -43,6 +36,17 @@ try:
     import aurum as au
 except ImportError as error:
     logging.warn(f"Not using Aurum: {str(error)}")
+except Exception as error:
+    pass
+
+try:
+    from catalysis.storage import StorageClient
+
+    has_catalysis = True
+
+except ImportError as error:
+    has_catalysis = False
+    logging.warn(f"Not using Catalysis: {str(error)}")
 except Exception as error:
     pass
 
@@ -70,14 +74,13 @@ class Context:
         else:
 
             if os.path.exists(attr_file_name):
-                res = self._deserialize(attr_file_name)
-                setattr(self, attr_name, res)
-                return res
+                self._deserialize(attr_file_name)
+                return getattr(self, attr_name)
 
+        logging.warning(f"Attribute '{attr_name}' was not found.")
         raise AttributeError(f"Attribute '{attr_name}' was not found.")
 
     def serialize(self) -> None:
-
         for attr in dir(self):
             if attr.startswith("_") or attr == 'self':
                 continue
@@ -86,7 +89,7 @@ class Context:
             if inspect.ismethod(attribute):
                 continue
 
-            if isinstance(attribute, StorageClient):
+            if has_catalysis and isinstance(attribute, StorageClient):
                 continue
 
             context_file_name = os.path.join(self.__context_location, attr)
@@ -103,20 +106,13 @@ class Context:
                         logging.debug(f"Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
                         attr_file.write(pickle.dumps(attribute))
             else:
-
-                if isinstance(attribute, pd.DataFrame):
-                    logging.debug(f"Context Attribute '{attr}' is a Pandas DataFrame")
-                    attribute.to_pickle(context_file_name)
-                else:
-
-                    with open(context_file_name, 'wb') as attr_file:
-                        if isinstance(attribute, np.ndarray):
-                            logging.debug(f"Context Attribute '{attr}' is a numpy array.")
-                            np.save(attr_file, attribute)
-                        else:
-                            logging.debug(
-                                f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
-                            pickle.dump(attribute, attr_file)
+                with open(context_file_name, 'wb') as attr_file:
+                    if isinstance(attribute, np.ndarray):
+                        logging.debug(f"Context Attribute '{attr}' is a numpy array.")
+                        np.save(attr_file, attribute)
+                    else:
+                        logging.debug(f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
+                        pickle.dump(attribute, attr_file)
 
     def deserialize(self) -> None:
 
@@ -129,10 +125,9 @@ class Context:
                 self._deserialize(os.path.join(self.__context_location, attr_file_name))
 
     def _deserialize(self, attr_file_name):
-        logging.debug(f"Deserializing context attribute from '{attr_file_name}'")
+        logging.info(f"Deserializing context attribute from '{attr_file_name}'")
 
         # TODO Refactor this to be more elegant
-        # TODO Add 'pd.read_pickle' support
         if self.catalysis_client is not None:
             with self.catalysis_client.open(attr_file_name, 'rb') as attr_file:
                 try:
@@ -146,26 +141,17 @@ class Context:
                     setattr(self, attr_file_name, np.load(attr_file))
                     logging.debug(f"Successfully deserialized '{attr_file_name}' as a numpy array.")
         else:
-
-            try:
-                return pd.read_pickle(attr_file_name)
-            except:
-
-                deserializing_methods = [
-                    pickle.load,
-                    np.load,
-                ]
-
-                with open(attr_file_name, 'rb') as attr_file:
-
-                    for m in deserializing_methods:
-
-                        try:
-                            return m(attr_file)
-                        except:
-                            pass
-
-                raise AttributeError(f"Unable to deserialize {attr_file}")
+            with open(attr_file_name, 'rb') as attr_file:
+                try:
+                    logging.debug(f"Attempting to deserialize '{attr_file_name}' with pickle...")
+                    setattr(self, attr_file_name, pickle.load(attr_file))
+                    logging.debug(
+                        f"Successfully deserialized '{attr_file_name}' as a python object of "
+                        f"type '{type(getattr(self, attr_file_name))}'")
+                except Exception:
+                    logging.debug(f"Attempting to deserialize '{attr_file_name}' with numpy...")
+                    setattr(self, attr_file_name, np.load(attr_file))
+                    logging.debug(f"Successfully deserialized '{attr_file_name}' as a numpy array.")
 
 
 @SingletonDecorator
@@ -259,20 +245,7 @@ class Stripping:
 
     @staticmethod
     def commit_aurum(step_name: str) -> None:
-        if 'aurum' in sys.modules.keys():
-
-            try:
-                au.base.git.add_dirs(['.'])
-                au.base.git.commit(
-                    commit_message=f"Auto commit step:{step_name}",
-                )
-                logging.info(f"step {step_name} has been committed in the repository")
-            except au.base.git.GitCommandError as e:
-                logging.warning(f"failed to commit to local repository: {e}")
-                return
-
-            try:
-                au.base.git.push()
-                logging.info(f"step {step_name} has been saved in the remote repository")
-            except au.base.git.GitCommandError as e:
-                logging.warning(f"failed to push to remote repository: {e}")
+        if 'au' in sys.modules:
+            au.base.git.commit(step_name)
+            au.base.git.push()
+            logging.info(f"step {step_name} has been saved in the Aurum's repository")

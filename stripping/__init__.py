@@ -24,13 +24,21 @@
 
 import os
 
-from catalysis.common.configuration import ClientConfiguration
-
 from .cache import StepCache
 from .executor import Stripping, Context
 from .logging import Logging
 
 logging = Logging().get_logger()
+
+try:
+    from catalysis.common.configuration import ClientConfiguration
+
+    has_catalysis = True
+except ImportError as error:
+    has_catalysis = False
+    logging.warn(f"Not using Catalysis: {str(error)}")
+except Exception as error:
+    pass
 
 
 def setup_stripping(cache_dir: str = None):
@@ -45,6 +53,8 @@ def setup_stripping(cache_dir: str = None):
 
 
 def setup_stripping_with_catalysis(catalysis_credential_name: str, cache_dir: str = None):
+    if not has_catalysis:
+        raise RuntimeError("Catalysis is not available")
     if cache_dir is None:
         cache_dir = fetch_catalysis_default_location(catalysis_credential_name)
 
@@ -54,6 +64,8 @@ def setup_stripping_with_catalysis(catalysis_credential_name: str, cache_dir: st
 
 
 def fetch_catalysis_default_location(catalysis_credential_name: str):
+    if not has_catalysis:
+        raise RuntimeError("Catalysis is not available")
     credential = ClientConfiguration().get_credential(catalysis_credential_name)
     if 'path' not in credential.keys():
         raise RuntimeError(
