@@ -69,12 +69,12 @@ class Context:
 
             with self.catalysis_client.open(attr_file_name) as f:
                 if f.exists():
-                    self._deserialize(attr_file_name)
+                    setattr(self, attr_name, self._deserialize(attr_file_name))
                     return getattr(self, attr_name)
         else:
 
             if os.path.exists(attr_file_name):
-                self._deserialize(attr_file_name)
+                setattr(self, attr_name, self._deserialize(attr_file_name))
                 return getattr(self, attr_name)
 
         logging.warning(f"Attribute '{attr_name}' was not found.")
@@ -132,26 +132,27 @@ class Context:
             with self.catalysis_client.open(attr_file_name, 'rb') as attr_file:
                 try:
                     logging.debug(f"Attempting to deserialize '{attr_file_name}' with pickle...")
-                    setattr(self, attr_file_name, pickle.load(attr_file))
+                    value = pickle.load(attr_file)
                     logging.debug(
                         f"Successfully deserialized '{attr_file_name}' as a python object of "
-                        f"type '{type(getattr(self, attr_file_name))}'")
+                        f"type '{type(value)}'")
                 except Exception:
                     logging.debug(f"Attempting to deserialize '{attr_file_name}' with numpy...")
-                    setattr(self, attr_file_name, np.load(attr_file))
+                    value = np.load(attr_file)
                     logging.debug(f"Successfully deserialized '{attr_file_name}' as a numpy array.")
         else:
             with open(attr_file_name, 'rb') as attr_file:
                 try:
                     logging.debug(f"Attempting to deserialize '{attr_file_name}' with pickle...")
-                    setattr(self, attr_file_name, pickle.load(attr_file))
+                    value = pickle.load(attr_file)
                     logging.debug(
                         f"Successfully deserialized '{attr_file_name}' as a python object of "
-                        f"type '{type(getattr(self, attr_file_name))}'")
+                        f"type '{type(value)}'")
                 except Exception:
                     logging.debug(f"Attempting to deserialize '{attr_file_name}' with numpy...")
-                    setattr(self, attr_file_name, np.load(attr_file))
+                    value = np.load(attr_file)
                     logging.debug(f"Successfully deserialized '{attr_file_name}' as a numpy array.")
+        return value
 
 
 @SingletonDecorator
