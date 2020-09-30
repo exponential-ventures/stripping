@@ -22,29 +22,32 @@
 ##
 
 
-import time
+from pathlib import Path
+
+import pandas as pd
+
+from stripping import setup_stripping
+
+file_path = "iris.csv"
+current_dir = Path(__file__).parent.absolute()
+st, ctx = setup_stripping('.stripping')
 
 
-class Benchmark:
-    def __init__(self, name: str):
-        self.labels = []
-        self.name = name
+@st.step()
+def load_dataset():
+    ctx.ds = pd.read_csv(file_path)
+    # ctx.ds = pd.DataFrame([1, 2, 3, 4])
+    # ctx.ds = pd.DataFrame({'name': ["a", "b", "c", "d", "e", "f", "g"],
+    #                        'age': [20, 27, 35, 55, 18, 21, 35],
+    #                        'designation': ["VP", "CEO", "CFO", "VP", "VP", "CEO", "MD"]})
+    # with open(file_path, "r") as f:
+    #     ctx.ds = pd.read_csv(f.read())
 
-    def start(self):
-        self.labels.append(('Start', time.time()))
 
-    def end(self):
-        self.labels.append(('End', time.time()))
 
-    def add_label(self, name: str):
-        self.labels.append((name, time.time()))
+@st.step()
+def access_ctx_ds():
+    print(ctx.ds)
 
-    def print(self):
-        print('')
-        print(self.name)
-        print('')
-        for label_index in range(1, len(self.labels)):
-            print(
-                f"{self.labels[label_index][0]} took"
-                f"{self.labels[label_index][1] - self.labels[label_index - 1][1]: .3f} seconds")
-        print('')
+
+st.execute()

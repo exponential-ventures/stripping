@@ -6,58 +6,60 @@ steps:
   - name: build
     image:  banzaicloud/drone-kaniko
     settings:
-      dockerfile: docker/Dockerfile
+      dockerfile: Dockerfile
+      repo: xnv/stripping
+      tags:
+        - latest
+        - ${DRONE_COMMIT_SHA:0:8}
       registry: k2so.xnv.io
-      repo: stripping
-      tags: latest
       username:
         from_secret: docker_username
       password:
         from_secret: docker_password
 
   - name: unit_test
-    image: k2so.xnv.io/stripping:latest
+    image: k2so.xnv.io/xnv/stripping:${DRONE_COMMIT_SHA:0:8}
     commands:
-      - "python -m unittest -v -f tests"
+      - "python3 -m unittest tests"
 
-  - name: alert_success
-    image: mike1pol/drone-rocket
+  - name: deploy_internal_pypi
+    image: k2so.xnv.io/xnv/stripping:${DRONE_COMMIT_SHA:0:8}
     settings:
-      url: https://xnv.rocket.chat
-      user_id:
-        from_secret: rocket_chat_user_id
-      token:
-        from_secret: rocket_chat_token
-      channel: general
-      message: >
-        *💯🔥 Alert: Build for {{ repo.name }} 💯🔥*
-         Build {{ build.number }} succeeded. Good job!. {{ build.link }}
-    when:
-      status:
-        - success
+      pypirc:
+        from_secret: pypirc
+    environment:
+        PYPIRC:
+          from_secret: pypirc
+    commands:
+      - "echo $PYPIRC | base64 -d > /root/.pypirc"
+      - "python3 setup.py -vvv sdist upload -r internal"
 
-  - name: alert_fail
-    image: mike1pol/drone-rocket
-    settings:
-      url: https://xnv.rocket.chat
-      user_id:
-        from_secret: rocket_chat_user_id
-      token:
-        from_secret: rocket_chat_token
-      channel: general
-      message: >
-        *💀 Alert: Build for {{ repo.name }} 💀*
-         Build {{ build.number }} failed. Fix me please. {{ build.link }}
+  - name: slack
+    image: plugins/slack
     when:
       status:
         - failure
-
-
-image_pull_secrets:
-- dockerconfig
+        - success
+    settings:
+      webhook:
+        from_secret: slack_webhook
+      channel: amalgam
+      template: >
+        {{#success build.status}}
+          Stripping: #build {{build.number}} succeeded. Good job.
+        Commit: `${DRONE_COMMIT_SHA:0:8}`
+        ${DRONE_BUILD_LINK}
+        {{else}}
+         Stripping: build #{{build.number}} failed. Fix me please.
+        Commit: `${DRONE_COMMIT_SHA:0:8}`
+        ${DRONE_BUILD_LINK}
+        {{/success}}
 
 
 trigger:
   branch:
-  - master
-  - develop
+    - master
+    - develop
+
+image_pull_secrets:
+  - dockerconfigjson

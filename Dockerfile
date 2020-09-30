@@ -13,9 +13,7 @@ COPY requirements.txt /usr/src/app/
 
 # We need to override the DNS to be able to access our internal PyPi server.
 # This must be done on a per-layer basis, the DNS config will not be maintained on the next layers
-RUN echo "nameserver 10.7.21.1" > /etc/resolv.conf  && \
-    echo "search xnv.io" >> /etc/resolv.conf && \
-    pip install --extra-index-url https://l337.xnv.io:443/ -r /usr/src/app/requirements.txt
+RUN echo "10.17.31.219	pypi.xnv.io" > /etc/hosts  &&  pip install  --trusted-host pypi.xnv.io --index-url http://pypi.xnv.io -r /usr/src/app/requirements.txt
 
 COPY . /usr/src/app/
 

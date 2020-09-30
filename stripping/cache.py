@@ -1,20 +1,26 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 ##
-# ----------------
-# |              |
-# | CONFIDENTIAL |
-# |              |
-# ----------------
+## Authors: Adriano Marques
+##          Nathan Martins
+##          Thales Ribeiro
 ##
-# Copyright Exponential Ventures LLC (C), 2019 All Rights Reserved
+## Copyright (C) 2019 Exponential Ventures LLC
 ##
-# Author: Adriano Marques <adriano@xnv.io>
-# Author: Thales Ribeiro  <thales@xnv.io>
+##    This library is free software; you can redistribute it and/or
+##    modify it under the terms of the GNU Library General Public
+##    License as published by the Free Software Foundation; either
+##    version 2 of the License, or (at your option) any later version.
 ##
-# If you do not have a written authorization to read this code
-# PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
+##    This library is distributed in the hope that it will be useful,
+##    but WITHOUT ANY WARRANTY; without even the implied warranty of
+##    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##    Library General Public License for more details.
 ##
+##    You should have received a copy of the GNU Library General Public
+##    License along with this library; if not, write to the Free Software
+##    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+##
+
 
 import asyncio
 import datetime
@@ -28,9 +34,15 @@ from glob import glob
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
 from .storage import CacheStorage
+
 try:
     from catalysis.storage.storage_client import StorageClient
-except ImportError as e:
+
+    has_catalysis = True
+except ImportError as error:
+    has_catalysis = False
+    logging.warn(f"Not using Catalysis: {str(error)}")
+except Exception as error:
     pass
 
 ACCESS = 'access'
@@ -64,8 +76,7 @@ class StepCache:
     async def execute_or_retrieve(self, step_fn, *args, **kwargs):
 
         if step_fn.skip_cache or os.environ.get("STRIPPING_SKIP_CACHE", False):
-            logging.info(
-                f"Step '{step_fn.name}' has skip_cache=True. Executing...")
+            logging.info(f"Step '{step_fn.name}' has skip_cache=True. Executing...")
 
             if inspect.iscoroutinefunction(step_fn):
                 step_return = await step_fn(*args, **kwargs)
@@ -84,8 +95,7 @@ class StepCache:
             else:
                 step_return = step_fn(*args, **kwargs)
 
-            self.storage.save_step(
-                step_fn.code, step_return, self.context, *args, **kwargs)
+            self.storage.save_step(step_fn.code, step_return, self.context, *args, **kwargs)
 
             return step_return
 
@@ -97,7 +107,7 @@ class CacheInvalidation:
         self.__cached_dirs = {}
         self.catalysis_client = None
 
-        if catalysis_credential_name != '':
+        if has_catalysis and catalysis_credential_name != '':
             self.catalysis_client = StorageClient(catalysis_credential_name)
 
     def add_dir(self, cache_dir):
@@ -115,7 +125,7 @@ class CacheInvalidation:
             logging.info('<!> {} deleted'.format(cache_dir))
 
         if cache_dir in self.__cached_dirs:
-            del(self.__cached_dirs[cache_dir])
+            del (self.__cached_dirs[cache_dir])
 
     async def strategy(self):
         """
@@ -124,14 +134,13 @@ class CacheInvalidation:
                 - free disk space reaches <= 15%
         """
 
-        three_months_ago_timestamp = datetime.datetime.timestamp(
-            self.year_ago(0.25))
+        three_months_ago_timestamp = datetime.datetime.timestamp(self.year_ago(0.25))
 
         for d in self.__cached_dirs.keys():
             self.__cached_dirs[d] = {}
             for dir_path in glob('{}/*'.format(d)):
                 self.__cached_dirs[d][dir_path] = {}
-                self.__cached_dirs[d][dir_path][ACCESS] = await self.__last_access(dir_path)
+                self.__cached_dirs[d][dir_path][ACCESS] = await self.__last_access( dir_path)
                 if self.__cached_dirs[d][dir_path][ACCESS] <= three_months_ago_timestamp:
                     await self.force_delete(dir_path)
                 await asyncio.sleep(0.2)
@@ -139,8 +148,7 @@ class CacheInvalidation:
             if await self.percentage_disk_free_space() < 15.00:
                 if len(self.__cached_dirs[d]) > 0:
                     # sort the list by least access
-                    sorted_cache_list = sorted(
-                        self.__cached_dirs[d].items(), key=lambda x: x[1][ACCESS])
+                    sorted_cache_list = sorted(self.__cached_dirs[d].items(), key=lambda x: x[1][ACCESS])
                     await self.force_delete(sorted_cache_list[0][0])
 
     async def strategy_runner(self):
@@ -173,3 +181,4 @@ class CacheInvalidation:
             total = stats.f_frsize * stats.f_blocks
             free = stats.f_frsize * stats.f_bavail
             return (free / total) * 100
+

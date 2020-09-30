@@ -1,26 +1,40 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 ##
-## ----------------
-## |              |
-## | CONFIDENTIAL |
-## |              |
-## ----------------
+## Authors: Adriano Marques
+##          Nathan Martins
+##          Thales Ribeiro
 ##
-## Copyright Exponential Ventures LLC (C), 2019 All Rights Reserved
+## Copyright (C) 2019 Exponential Ventures LLC
 ##
-## Author: Thales Ribeiro <thales@xnv.io>
-## Author: Nathan Martins <nathan@xnv.io>
+##    This library is free software; you can redistribute it and/or
+##    modify it under the terms of the GNU Library General Public
+##    License as published by the Free Software Foundation; either
+##    version 2 of the License, or (at your option) any later version.
 ##
-## If you do not have a written authorization to read this code
-## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
+##    This library is distributed in the hope that it will be useful,
+##    but WITHOUT ANY WARRANTY; without even the implied warranty of
+##    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##    Library General Public License for more details.
 ##
+##    You should have received a copy of the GNU Library General Public
+##    License along with this library; if not, write to the Free Software
+##    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+##
+
 
 import json
-from pandas.core.frame import DataFrame
+import logging
 from datetime import datetime
 
-from catalysis.storage import StorageClient
+try:
+    from catalysis.storage import StorageClient
+
+    has_catalysis = True
+except ImportError as error:
+    has_catalysis = False
+    logging.warn(f"Not using Catalysis: {str(error)}")
+except Exception as error:
+    pass
 
 STOUT = 'stdout'
 FILE = 'file'
@@ -46,8 +60,7 @@ class Elemental:
     def filters(self, *filters):
         self.__filters = filters
 
-    def report(self, report_name, path="/tmp/elemental_report.txt", report_type=STOUT,
-               catalysis_client: StorageClient = None):
+    def report(self, report_name, path="/tmp/elemental_report.txt", report_type=STOUT, catalysis_client=None):
         self._path = path
         self._report_type = report_type
         self._report_name = report_name
@@ -82,7 +95,7 @@ class Elemental:
                         f.write(self._generate_json_report(self._report_name))
                     else:
                         f.write(self._generate_report(self._report_name))
-            else:
+            elif has_catalysis:
                 with self._catalysis_client.open(self._path, '+w') as f:
                     if self._report_type == JSON:
                         f.write(self._generate_json_report(self._report_name))
@@ -113,5 +126,6 @@ class Elemental:
         report['generated_at'] = str(datetime.now())
         return json.dumps(report)
 
-    def _field_infererence(self, dataframe):
-        dataframe.infer_objects()
+    @staticmethod
+    def _field_infererence(df):
+        df.infer_objects()

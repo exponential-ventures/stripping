@@ -1,19 +1,27 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 ##
-# ----------------
-# |              |
-# | CONFIDENTIAL |
-# |              |
-# ----------------
+## Authors: Adriano Marques
+##          Nathan Martins
+##          Thales Ribeiro
 ##
-# Copyright Exponential Ventures LLC (C), 2019 All Rights Reserved
+## Copyright (C) 2019 Exponential Ventures LLC
 ##
-# Author: Adriano Marques <adriano@xnv.io>
+##    This library is free software; you can redistribute it and/or
+##    modify it under the terms of the GNU Library General Public
+##    License as published by the Free Software Foundation; either
+##    version 2 of the License, or (at your option) any later version.
 ##
-# If you do not have a written authorization to read this code
-# PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
+##    This library is distributed in the hope that it will be useful,
+##    but WITHOUT ANY WARRANTY; without even the implied warranty of
+##    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+##    Library General Public License for more details.
 ##
+##    You should have received a copy of the GNU Library General Public
+##    License along with this library; if not, write to the Free Software
+##    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+##
+
+
 import asyncio
 import hashlib
 import logging
@@ -23,15 +31,17 @@ import sys
 from pathlib import Path
 from tempfile import TemporaryFile
 from typing import Iterable
-from .logging import Logging
-from .exceptions import StepNotCached
+
 try:
-    from catalysis.storage.storage_client import StorageClient
-except ImportError as e:
-    pass
+    from catalysis.storage import StorageClient
 
+    has_catalysis = True
+except ImportError:
+    has_catalysis = False
 
-logging = Logging().get_logger()
+from .exceptions import StepNotCached
+
+LOG = logging.getLogger('stripping')
 
 
 class CacheStorage:
@@ -41,7 +51,7 @@ class CacheStorage:
     def __init__(self, cache_dir: str, catalysis_credential_name: str = '') -> None:
         self.cache_dir = cache_dir
 
-        if catalysis_credential_name != '':
+        if has_catalysis and catalysis_credential_name != '':
             self.catalysis_client = StorageClient(catalysis_credential_name)
         else:
             self.catalysis_client = None
@@ -54,12 +64,10 @@ class CacheStorage:
         self.exec_name = os.path.split(sys.argv[0])[1]
         self.hashed_name = hashlib.sha1(self.exec_name.encode()).hexdigest()
         self.exec_args = sorted(sys.argv[1:])
-        self.hashed_args = hashlib.sha1(
-            ",".join(self.exec_args).encode()).hexdigest()
+        self.hashed_args = hashlib.sha1(",".join(self.exec_args).encode()).hexdigest()
 
     def step_location(self, step_code: str, *args, **kwargs) -> Iterable[Path]:
-        input_args = list(
-            args) + [i for pair in sorted(kwargs.items(), key=lambda x: x[0]) for i in pair]
+        input_args = list(args) + [i for pair in sorted(kwargs.items(), key=lambda x: x[0]) for i in pair]
         input_args = ",".join([str(i) for i in input_args]).encode()
         loc = Path(os.path.join(self.cache_dir,
                                 self.hashed_name,
@@ -69,8 +77,7 @@ class CacheStorage:
         return loc, loc / 'return', loc / 'context'
 
     def get_step(self, step_name: str, step_code: str, context, *args, **kwargs):
-        location, return_location, context_location = self.step_location(
-            step_code, *args, **kwargs)
+        location, return_location, context_location = self.step_location(step_code, *args, **kwargs)
         return_file_name = return_location / '0'
 
         if self.catalysis_client is not None:
@@ -112,8 +119,7 @@ class CacheStorage:
 
     def save_step(self, step_code: str, step_return, context, *args, **kwargs) -> None:
 
-        location, return_location, context_location = self.step_location(
-            step_code, *args, **kwargs)
+        location, return_location, context_location = self.step_location(step_code, *args, **kwargs)
 
         # Only create dirs if we don't have a catalysis client, otherwise the driver already takes
         # care of creating our directories whenever we write to a file with non-existent path.
