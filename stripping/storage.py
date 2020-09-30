@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ##
-## ----------------
-## |              |
-## | CONFIDENTIAL |
-## |              |
-## ----------------
+# ----------------
+# |              |
+# | CONFIDENTIAL |
+# |              |
+# ----------------
 ##
-## Copyright Exponential Ventures LLC (C), 2019 All Rights Reserved
+# Copyright Exponential Ventures LLC (C), 2019 All Rights Reserved
 ##
-## Author: Adriano Marques <adriano@xnv.io>
+# Author: Adriano Marques <adriano@xnv.io>
 ##
-## If you do not have a written authorization to read this code
-## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
+# If you do not have a written authorization to read this code
+# PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
 import asyncio
 import hashlib
@@ -23,12 +23,15 @@ import sys
 from pathlib import Path
 from tempfile import TemporaryFile
 from typing import Iterable
-
-from catalysis.storage import StorageClient
-
+from .logging import Logging
 from .exceptions import StepNotCached
+try:
+    from catalysis.storage.storage_client import StorageClient
+except ImportError as e:
+    pass
 
-LOG = logging.getLogger('stripping')
+
+logging = Logging().get_logger()
 
 
 class CacheStorage:
@@ -51,10 +54,12 @@ class CacheStorage:
         self.exec_name = os.path.split(sys.argv[0])[1]
         self.hashed_name = hashlib.sha1(self.exec_name.encode()).hexdigest()
         self.exec_args = sorted(sys.argv[1:])
-        self.hashed_args = hashlib.sha1(",".join(self.exec_args).encode()).hexdigest()
+        self.hashed_args = hashlib.sha1(
+            ",".join(self.exec_args).encode()).hexdigest()
 
     def step_location(self, step_code: str, *args, **kwargs) -> Iterable[Path]:
-        input_args = list(args) + [i for pair in sorted(kwargs.items(), key=lambda x: x[0]) for i in pair]
+        input_args = list(
+            args) + [i for pair in sorted(kwargs.items(), key=lambda x: x[0]) for i in pair]
         input_args = ",".join([str(i) for i in input_args]).encode()
         loc = Path(os.path.join(self.cache_dir,
                                 self.hashed_name,
@@ -64,7 +69,8 @@ class CacheStorage:
         return loc, loc / 'return', loc / 'context'
 
     def get_step(self, step_name: str, step_code: str, context, *args, **kwargs):
-        location, return_location, context_location = self.step_location(step_code, *args, **kwargs)
+        location, return_location, context_location = self.step_location(
+            step_code, *args, **kwargs)
         return_file_name = return_location / '0'
 
         if self.catalysis_client is not None:
@@ -106,7 +112,8 @@ class CacheStorage:
 
     def save_step(self, step_code: str, step_return, context, *args, **kwargs) -> None:
 
-        location, return_location, context_location = self.step_location(step_code, *args, **kwargs)
+        location, return_location, context_location = self.step_location(
+            step_code, *args, **kwargs)
 
         # Only create dirs if we don't have a catalysis client, otherwise the driver already takes
         # care of creating our directories whenever we write to a file with non-existent path.

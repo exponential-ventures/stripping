@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ##
-## ----------------
-## |              |
-## | CONFIDENTIAL |
-## |              |
-## ----------------
+# ----------------
+# |              |
+# | CONFIDENTIAL |
+# |              |
+# ----------------
 ##
-## Copyright Exponential Ventures LLC (C), 2019 All Rights Reserved
+# Copyright Exponential Ventures LLC (C), 2019 All Rights Reserved
 ##
-## Author: Adriano Marques <adriano@xnv.io>
-## Author: Thales Ribeiro  <thales@xnv.io>
+# Author: Adriano Marques <adriano@xnv.io>
+# Author: Thales Ribeiro  <thales@xnv.io>
 ##
-## If you do not have a written authorization to read this code
-## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
+# If you do not have a written authorization to read this code
+# PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
 
 import asyncio
@@ -28,7 +28,10 @@ from glob import glob
 from .exceptions import StepNotCached
 from .singleton import SingletonDecorator
 from .storage import CacheStorage
-from catalysis.storage.storage_client import StorageClient
+try:
+    from catalysis.storage.storage_client import StorageClient
+except ImportError as e:
+    pass
 
 ACCESS = 'access'
 DIR_PATH = 'path'
@@ -61,7 +64,8 @@ class StepCache:
     async def execute_or_retrieve(self, step_fn, *args, **kwargs):
 
         if step_fn.skip_cache or os.environ.get("STRIPPING_SKIP_CACHE", False):
-            logging.info(f"Step '{step_fn.name}' has skip_cache=True. Executing...")
+            logging.info(
+                f"Step '{step_fn.name}' has skip_cache=True. Executing...")
 
             if inspect.iscoroutinefunction(step_fn):
                 step_return = await step_fn(*args, **kwargs)
@@ -80,7 +84,8 @@ class StepCache:
             else:
                 step_return = step_fn(*args, **kwargs)
 
-            self.storage.save_step(step_fn.code, step_return, self.context, *args, **kwargs)
+            self.storage.save_step(
+                step_fn.code, step_return, self.context, *args, **kwargs)
 
             return step_return
 
@@ -112,7 +117,6 @@ class CacheInvalidation:
         if cache_dir in self.__cached_dirs:
             del(self.__cached_dirs[cache_dir])
 
-
     async def strategy(self):
         """
             A Cache is deleted when:
@@ -120,13 +124,14 @@ class CacheInvalidation:
                 - free disk space reaches <= 15%
         """
 
-        three_months_ago_timestamp = datetime.datetime.timestamp(self.year_ago(0.25))
+        three_months_ago_timestamp = datetime.datetime.timestamp(
+            self.year_ago(0.25))
 
         for d in self.__cached_dirs.keys():
             self.__cached_dirs[d] = {}
             for dir_path in glob('{}/*'.format(d)):
                 self.__cached_dirs[d][dir_path] = {}
-                self.__cached_dirs[d][dir_path][ACCESS] = await self.__last_access( dir_path)
+                self.__cached_dirs[d][dir_path][ACCESS] = await self.__last_access(dir_path)
                 if self.__cached_dirs[d][dir_path][ACCESS] <= three_months_ago_timestamp:
                     await self.force_delete(dir_path)
                 await asyncio.sleep(0.2)
@@ -134,7 +139,8 @@ class CacheInvalidation:
             if await self.percentage_disk_free_space() < 15.00:
                 if len(self.__cached_dirs[d]) > 0:
                     # sort the list by least access
-                    sorted_cache_list = sorted(self.__cached_dirs[d].items(), key=lambda x: x[1][ACCESS])
+                    sorted_cache_list = sorted(
+                        self.__cached_dirs[d].items(), key=lambda x: x[1][ACCESS])
                     await self.force_delete(sorted_cache_list[0][0])
 
     async def strategy_runner(self):
@@ -167,4 +173,3 @@ class CacheInvalidation:
             total = stats.f_frsize * stats.f_blocks
             free = stats.f_frsize * stats.f_bavail
             return (free / total) * 100
-

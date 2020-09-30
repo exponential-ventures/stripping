@@ -1,26 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ##
-## ----------------
-## |              |
-## | CONFIDENTIAL |
-## |              |
-## ----------------
+# ----------------
+# |              |
+# | CONFIDENTIAL |
+# |              |
+# ----------------
 ##
-## Copyright Exponential Ventures LLC (C), 2019 All Rights Reserved
+# Copyright Exponential Ventures LLC (C), 2019 All Rights Reserved
 ##
-## Author: Adriano Marques <adriano@xnv.io>
+# Author: Adriano Marques <adriano@xnv.io>
 ##
-## If you do not have a written authorization to read this code
-## PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
+# If you do not have a written authorization to read this code
+# PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
 ##
 import os
 
-from catalysis.common.configuration import ClientConfiguration
 
 from .cache import StepCache
 from .executor import Stripping, Context
 from .logging import Logging
+try:
+    from catalysis.storage.storage_client import StorageClient
+except ImportError as e:
+    pass
 
 logging = Logging().get_logger()
 
@@ -29,7 +32,8 @@ def setup_stripping(cache_dir: str = None):
     if cache_dir is None:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         cache_dir = os.path.join(current_dir, 'stripping_cache')
-        logging.info(f"No cache_dir was specified, using default location: {cache_dir}")
+        logging.info(
+            f"No cache_dir was specified, using default location: {cache_dir}")
 
     st, c = Stripping(cache_dir), Context()
     st.cache.register_context(c)
