@@ -140,7 +140,7 @@ class CacheInvalidation:
             self.__cached_dirs[d] = {}
             for dir_path in glob('{}/*'.format(d)):
                 self.__cached_dirs[d][dir_path] = {}
-                self.__cached_dirs[d][dir_path][ACCESS] = await self.__last_access(dir_path)
+                self.__cached_dirs[d][dir_path][ACCESS] = await self.__last_access( dir_path)
                 if self.__cached_dirs[d][dir_path][ACCESS] <= three_months_ago_timestamp:
                     await self.force_delete(dir_path)
                 await asyncio.sleep(0.2)
@@ -181,3 +181,4 @@ class CacheInvalidation:
             total = stats.f_frsize * stats.f_blocks
             free = stats.f_frsize * stats.f_bavail
             return (free / total) * 100
+

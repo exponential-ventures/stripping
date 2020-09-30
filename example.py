@@ -38,11 +38,8 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from stripping import setup_stripping
 
 
-benchmark.add_label('end_imports')
-
 st, c = setup_stripping(join(split(__file__)[0], '.stripping'))
 logging.basicConfig(level=logging.DEBUG)
-benchmark.add_label('end_log_config')
 
 
 @st.step()
@@ -50,15 +47,14 @@ def load_dataset():
     c.bf_file = join(split(__file__)[0], "datasets", "black_friday.csv")
     logging.info(f"Processing file '{c.bf_file}' without using the Catalysis acceleration framework.")
     c.bf = pd.read_csv(c.bf_file)
-    benchmark.add_label('file_loaded_into_memory')
 
 
 @st.step()
 def split_dataset():
     c.X = c.bf.iloc[:, 0:6].values
     c.y = c.bf.iloc[:, 9].values
-    benchmark.add_label('data_splitted')
-    c.X_train, c.X_test, c.y_train, c.y_test = train_test_split(c.X, c.y, test_size=0.15, random_state=0)
+    c.X_train, c.X_test, c.y_train, c.y_test = train_test_split(
+        c.X, c.y, test_size=0.15, random_state=0)
 
 
 @st.step()
@@ -77,8 +73,6 @@ def encode_labels():
     c.X_test[:, 3] = c.x_test_encoder.fit_transform(c.X_test[:, 3])
     c.X_test[:, 4] = c.x_test_encoder.fit_transform(c.X_test[:, 4])
 
-    benchmark.add_label('labels_encoded')
-
 
 @st.step()
 def scale_values():
@@ -89,7 +83,6 @@ def scale_values():
 
     c.X_train = c.X_train_scaler.fit_transform(c.X_train)
     c.X_test = c.X_test_scaler.fit_transform(c.X_test)
-    benchmark.add_label('values_scaled')
 
 
 @st.step()
@@ -98,24 +91,12 @@ def train_model():
     # Training and error measurement
     c.regressor = RandomForestRegressor(n_estimators=1000, random_state=0)
     c.regressor.fit(c.X_train, c.y_train)
-    benchmark.add_label('training_finished')
 
 
 @st.step()
 def measure_error():
     c.y_pred = c.regressor.predict(c.X_test)
     c.error = mean_absolute_error(c.y_test, c.y_pred)
-    benchmark.add_label('end_of_script')
 
 
 st.execute()
-benchmark.end()
-benchmark.print()
-
-
-benchmark = Benchmark('Black Friday with stripping second pass using cache')
-benchmark.start()
-st.execute()
-benchmark.end()
-benchmark.print()
-

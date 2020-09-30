@@ -25,7 +25,7 @@ import logging
 import os
 from logging.config import fileConfig
 from pathlib import Path
-
+import sys
 from stripping.singleton import SingletonDecorator
 
 
@@ -33,7 +33,11 @@ from stripping.singleton import SingletonDecorator
 class Logging:
     def __init__(self):
         self.file_name = 'logging.ini'
-        fileConfig(self.__find_config_file())
+        try:
+            fileConfig(self.__find_config_file())
+        except FileNotFoundError:
+            logging.info("Logging file not found. Logging to stdout.")
+            logging.StreamHandler(sys.stdout)
 
     def get_logger(self):
         return logging.getLogger('stripping')
