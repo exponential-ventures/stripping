@@ -25,7 +25,6 @@ import sys
 from tempfile import TemporaryFile
 
 import numpy as np
-import pandas as pd
 
 from .cache import StepCache
 from .singleton import SingletonDecorator
