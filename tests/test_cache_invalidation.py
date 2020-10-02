@@ -53,7 +53,7 @@ class TestCacheInvalidation(asynctest.TestCase):
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
     async def test_strategy(self):
-        self.storage.save_step('Pass', 'RETURN_HERE', context)
+        self.storage.save_step('Pass', 'name', 'RETURN_HERE', context)
         await self.cache_invalidation.strategy()
         self.assertTrue(len(glob(f'{tmp_dir}{os.sep}*')) >= 0)
 

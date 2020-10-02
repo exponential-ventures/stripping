@@ -95,7 +95,7 @@ class StepCache:
             else:
                 step_return = step_fn(*args, **kwargs)
 
-            self.storage.save_step(step_fn.code, step_return, self.context, *args, **kwargs)
+            self.storage.save_step(step_fn.code, step_fn.name, step_return, self.context, *args, **kwargs)
 
             return step_return
 

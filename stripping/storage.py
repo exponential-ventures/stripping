@@ -29,6 +29,7 @@ import os
 import pickle
 import sys
 from pathlib import Path
+from shutil import rmtree
 from tempfile import TemporaryFile
 from typing import Iterable
 
@@ -66,18 +67,19 @@ class CacheStorage:
         self.exec_args = sorted(sys.argv[1:])
         self.hashed_args = hashlib.sha1(",".join(self.exec_args).encode()).hexdigest()
 
-    def step_location(self, step_code: str, *args, **kwargs) -> Iterable[Path]:
+    def step_location(self, step_code: str, step_name: str, *args, **kwargs) -> Iterable[Path]:
         input_args = list(args) + [i for pair in sorted(kwargs.items(), key=lambda x: x[0]) for i in pair]
         input_args = ",".join([str(i) for i in input_args]).encode()
         loc = Path(os.path.join(self.cache_dir,
                                 self.hashed_name,
                                 self.hashed_args,
+                                hashlib.sha1(step_name.encode()).hexdigest(),
                                 hashlib.sha1(step_code.encode()).hexdigest(),
                                 hashlib.sha1(input_args).hexdigest()))
         return loc, loc / 'return', loc / 'context'
 
     def get_step(self, step_name: str, step_code: str, context, *args, **kwargs):
-        location, return_location, context_location = self.step_location(step_code, *args, **kwargs)
+        location, return_location, context_location = self.step_location(step_code, step_name, *args, **kwargs)
         return_file_name = return_location / '0'
 
         if self.catalysis_client is not None:
@@ -114,12 +116,17 @@ class CacheStorage:
                             return None
 
                 return None
+            elif Path(os.path.join(self.cache_dir, self.hashed_name, self.hashed_args,
+                                   hashlib.sha1(step_name.encode()).hexdigest())).exists():
+                LOG.info(f'Deleting cache for step {step_name}')
+                rmtree(os.path.join(self.cache_dir, self.hashed_name, self.hashed_args,
+                                    hashlib.sha1(step_name.encode()).hexdigest()), ignore_errors=True)
 
         raise StepNotCached(f"The step '{step_name}' is not yet cached.")
 
-    def save_step(self, step_code: str, step_return, context, *args, **kwargs) -> None:
+    def save_step(self, step_code: str, step_name: str, step_return, context, *args, **kwargs) -> None:
 
-        location, return_location, context_location = self.step_location(step_code, *args, **kwargs)
+        location, return_location, context_location = self.step_location(step_code, step_name, *args, **kwargs)
 
         # Only create dirs if we don't have a catalysis client, otherwise the driver already takes
         # care of creating our directories whenever we write to a file with non-existent path.
