@@ -43,14 +43,19 @@ class TestStorage(asynctest.TestCase):
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
     def test_save_step(self):
-        self.storage.save_step(step_code='Pass', step_name='step_name', step_return='RETURN_HERE', context=context)
-        aux = self.storage.get_step(step_name='step_name', step_code='Pass', context=context)
+        step_fn = asynctest.Mock()
+        step_fn.configure_mock(code='Pass', name='step_name', line=61)
+        self.storage.save_step(step_fn, step_return='RETURN_HERE', context=context)
+        aux = self.storage.get_step(step_fn, context=context)
         self.assertEqual(aux, 'RETURN_HERE')  # That means the code/step was found
         with self.assertRaises(StepNotCached):
-            self.storage.get_step('', 'bla', 'PHONY_CODE', context)
+            step_fn.configure_mock(code='PHONY_CODE', name='bla', line=61)
+            self.storage.get_step(step_fn, context)
 
     def test_step_location(self):
-        aux = self.storage.step_location(step_code='Pass', step_name='step_name')
+        step_fn = asynctest.Mock()
+        step_fn.configure_mock(code='Pass', name='step_name', line=61)
+        aux = self.storage.step_location(step_fn)
         # The len(aux) should be 3 because it means
         # location, return location and context location path
         self.assertEqual(3, len(aux))

@@ -56,7 +56,9 @@ class TestCacheInvalidationWithCatalysis(asynctest.TestCase):
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
     async def test_strategy(self):
-        self.storage.save_step('Pass', 'step_name', 'RETURN_HERE', context)
+        step_fn = asynctest.Mock()
+        step_fn.configure_mock(code='Pass', name='step_name', line=61)
+        self.storage.save_step(step_fn, 'RETURN_HERE', context)
         await self.cache_invalidation.strategy()
         self.assertTrue(len(glob(f'{tmp_dir}{os.sep}*')) >= 0)
 

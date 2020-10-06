@@ -28,6 +28,7 @@ import logging
 import os
 import pickle
 import sys
+from glob import glob
 from pathlib import Path
 from shutil import rmtree
 from tempfile import TemporaryFile
@@ -67,19 +68,20 @@ class CacheStorage:
         self.exec_args = sorted(sys.argv[1:])
         self.hashed_args = hashlib.sha1(",".join(self.exec_args).encode()).hexdigest()
 
-    def step_location(self, step_code: str, step_name: str, *args, **kwargs) -> Iterable[Path]:
+    def step_location(self, step_fn, *args, **kwargs) -> Iterable[Path]:
         input_args = list(args) + [i for pair in sorted(kwargs.items(), key=lambda x: x[0]) for i in pair]
         input_args = ",".join([str(i) for i in input_args]).encode()
         loc = Path(os.path.join(self.cache_dir,
                                 self.hashed_name,
                                 self.hashed_args,
-                                hashlib.sha1(step_name.encode()).hexdigest(),
-                                hashlib.sha1(step_code.encode()).hexdigest(),
+                                hashlib.sha1(step_fn.name.encode()).hexdigest(),
+                                str(step_fn.line),
+                                hashlib.sha1(step_fn.code.encode()).hexdigest(),
                                 hashlib.sha1(input_args).hexdigest()))
         return loc, loc / 'return', loc / 'context'
 
-    def get_step(self, step_name: str, step_code: str, context, *args, **kwargs):
-        location, return_location, context_location = self.step_location(step_code, step_name, *args, **kwargs)
+    def get_step(self, step_fn, context, *args, **kwargs):
+        location, return_location, context_location = self.step_location(step_fn, *args, **kwargs)
         return_file_name = return_location / '0'
 
         if self.catalysis_client is not None:
@@ -116,17 +118,30 @@ class CacheStorage:
                             return None
 
                 return None
+
             elif Path(os.path.join(self.cache_dir, self.hashed_name, self.hashed_args,
-                                   hashlib.sha1(step_name.encode()).hexdigest())).exists():
-                LOG.info(f'Deleting cache for step {step_name}')
-                rmtree(os.path.join(self.cache_dir, self.hashed_name, self.hashed_args,
-                                    hashlib.sha1(step_name.encode()).hexdigest()), ignore_errors=True)
+                                   hashlib.sha1(step_fn.name.encode()).hexdigest())).exists():
+                LOG.info(f'Deleting cache for step {step_fn.name}')
 
-        raise StepNotCached(f"The step '{step_name}' is not yet cached.")
+                dir_path = os.path.join(self.cache_dir, self.hashed_name, self.hashed_args,
+                                        hashlib.sha1(step_fn.name.encode()).hexdigest())
+                current_dir_files = glob(os.path.join(dir_path, '*'))
+                if len(current_dir_files) > 0:
+                    old_line = os.path.split(current_dir_files[0])[1]
 
-    def save_step(self, step_code: str, step_name: str, step_return, context, *args, **kwargs) -> None:
+                    cache_paths = glob(os.path.join(self.cache_dir, self.hashed_name, self.hashed_args, '*/*'))
+                    LOG.info(f'Deleting cache for subsequent steps of {step_fn.name}')
 
-        location, return_location, context_location = self.step_location(step_code, step_name, *args, **kwargs)
+                    subsequent_cache_paths = list(filter(lambda x: int(os.path.split(x)[1]) > int(old_line), cache_paths))
+                    for cp in subsequent_cache_paths:
+                        rmtree(cp, ignore_errors=True)
+
+                rmtree(dir_path, ignore_errors=True)
+
+        raise StepNotCached(f"The step '{step_fn.name}' is not yet cached.")
+
+    def save_step(self, step_fn, step_return, context, *args, **kwargs) -> None:
+        location, return_location, context_location = self.step_location(step_fn, *args, **kwargs)
 
         # Only create dirs if we don't have a catalysis client, otherwise the driver already takes
         # care of creating our directories whenever we write to a file with non-existent path.
