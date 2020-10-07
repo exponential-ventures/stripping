@@ -86,7 +86,7 @@ class StepCache:
             return step_return
 
         try:
-            return self.storage.get_step(step_fn.name, step_fn.code, self.context, *args, **kwargs)
+            return self.storage.get_step(step_fn, self.context, *args, **kwargs)
         except StepNotCached:
             logging.info(f"Step '{step_fn.name}' is not cached. Executing...")
 
@@ -95,7 +95,7 @@ class StepCache:
             else:
                 step_return = step_fn(*args, **kwargs)
 
-            self.storage.save_step(step_fn.code, step_return, self.context, *args, **kwargs)
+            self.storage.save_step(step_fn, step_return, self.context, *args, **kwargs)
 
             return step_return
 

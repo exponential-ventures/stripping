@@ -51,7 +51,7 @@ class TestStorageWithCatalysis(asynctest.TestCase):
         stripping, context = setup_stripping_with_catalysis(cache_dir, "local")
 
         storage = stripping.cache.storage
-        storage.save_step('Pass', 'RETURN_HERE', context)
+        storage.save_step('Pass', 'step_name', 'RETURN_HERE', context)
 
     async def test_get_step_remotely(self):
         random = str(uuid.uuid4())
@@ -61,7 +61,7 @@ class TestStorageWithCatalysis(asynctest.TestCase):
         stripping, context = setup_stripping_with_catalysis(cache_dir, "local")
 
         storage = stripping.cache.storage
-        storage.save_step('Pass', 'RETURN_HERE', context)
+        storage.save_step('Pass', 'step_name', 'RETURN_HERE', context)
 
         aux = storage.step_location('Pass')
         # The len(aux) should be 3 because it means

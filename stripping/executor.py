@@ -25,7 +25,6 @@ import sys
 from tempfile import TemporaryFile
 
 import numpy as np
-import pandas as pd
 
 from .cache import StepCache
 from .singleton import SingletonDecorator
@@ -205,6 +204,7 @@ class Stripping:
 
             wrapper.code = inspect.getsource(step_fn)
             wrapper.name = step_fn.__name__
+            wrapper.line = step_fn.__code__.co_firstlineno
             wrapper.skip_cache = skip_cache
             wrapper.chain = chain
             self.steps.append(wrapper)

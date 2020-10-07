@@ -22,17 +22,18 @@
 ##
 
 
-import asynctest
-import shutil
-import tracemalloc
 import datetime
 import os
-from os.path import split, join, exists
-from freezegun import freeze_time
+import shutil
+import tracemalloc
 from glob import glob
+from os.path import split, join
 
-from stripping.cache import StepCache, CacheInvalidation
+import asynctest
+from freezegun import freeze_time
+
 from stripping import setup_stripping
+from stripping.cache import CacheInvalidation
 from stripping.storage import CacheStorage
 
 tmp_dir = join(split(__file__)[0], '.test_cache')
@@ -53,11 +54,13 @@ class TestCacheInvalidation(asynctest.TestCase):
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
     async def test_strategy(self):
-        self.storage.save_step('Pass', 'RETURN_HERE', context)
+        step_fn = asynctest.Mock()
+        step_fn.configure_mock(code='Pass', name='step_name', line=61)
+        self.storage.save_step(step_fn=step_fn, step_return='STEP_RETURN', context=context)
         await self.cache_invalidation.strategy()
         self.assertTrue(len(glob(f'{tmp_dir}{os.sep}*')) >= 0)
 
-        with freeze_time(datetime.datetime.now() + datetime.timedelta(days=0.25*365)):
+        with freeze_time(datetime.datetime.now() + datetime.timedelta(days=0.25 * 365)):
             await self.cache_invalidation.strategy()
 
         self.assertEqual(0, len(glob(f'{tmp_dir}{os.sep}*')))
