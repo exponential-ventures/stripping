@@ -39,11 +39,9 @@ setup(
     packages=find_packages(exclude=['*tests*', 'test*']),
     platforms=['any'],
     classifiers=[
-        'License :: OSI Approved :: GNU LGPLv3',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
