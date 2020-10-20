@@ -78,7 +78,7 @@ class Context:
             if isinstance(attribute, str):
                 attr_hash = hashlib.sha224(bytes(attribute, "utf-8")).hexdigest()
             else:
-                attr_hash = hashlib.sha224(attribute).hexdigest()
+                attr_hash = hashlib.sha224(pickle.dumps(attribute)).hexdigest()
 
             if attr_hash in attr_hash_list:
                 logging.info(f"Skipping serializing context attribute '{attr}' to '{context_file_name}'...")
