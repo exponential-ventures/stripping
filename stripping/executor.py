@@ -75,7 +75,7 @@ class Context:
 
             context_file_name = os.path.join(self.__context_location, attr)
 
-            if not isinstance(attribute, bytes):
+            if isinstance(attribute, str):
                 attr_hash = hashlib.sha224(bytes(attribute, "utf-8")).hexdigest()
             else:
                 attr_hash = hashlib.sha224(attribute).hexdigest()
