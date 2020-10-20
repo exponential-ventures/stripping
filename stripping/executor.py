@@ -28,13 +28,6 @@ class Context:
     __context_location = None
     catalysis_client = None
 
-    @property
-    def attr_hash_location(self):
-
-        ctx_map_name = "ctx_map"
-
-        return os.path.join("/tmp", ctx_map_name)
-
     def register_context_location(self, context_location):
         self.__context_location = context_location
 
@@ -59,10 +52,10 @@ class Context:
         logging.warning(f"Attribute '{attr_name}' was not found.")
         raise AttributeError(f"Attribute '{attr_name}' was not found.")
 
-    def serialize(self) -> None:
+    def serialize(self, attr_hash_location: str) -> None:
 
-        if os.path.exists(self.attr_hash_location):
-            with open(self.attr_hash_location, "rb") as f:
+        if os.path.exists(attr_hash_location):
+            with open(attr_hash_location, "rb") as f:
                 attr_hash_list = pickle.load(f)
         else:
             attr_hash_list = list()
@@ -110,7 +103,7 @@ class Context:
 
             attr_file.close()
 
-        with open(self.attr_hash_location, "wb+") as f:
+        with open(attr_hash_location, "wb+") as f:
             f.write(pickle.dumps(attr_hash_list))
 
     def deserialize(self) -> None:

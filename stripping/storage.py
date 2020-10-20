@@ -164,4 +164,7 @@ class CacheStorage:
 
         context.register_context_location(context_location)
         context.register_catalysis_client(self.catalysis_client)
-        context.serialize()
+
+        attr_hash_location = os.path.join(self.cache_dir, "attr_hash.pkl")
+
+        context.serialize(attr_hash_location=attr_hash_location)
