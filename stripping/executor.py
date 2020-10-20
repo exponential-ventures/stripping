@@ -1,22 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-##
-## ----------------
-## |              |
-## | CONFIDENTIAL |
-## |              |
-## ----------------
-##
-# Copyright Exponential Ventures LLC (C), 2019 All Rights Reserved
-##
-# Author: Adriano Marques <adriano@xnv.io>
-##
-# If you do not have a written authorization to read this code
-# PERMANENTLY REMOVE IT FROM YOUR SYSTEM IMMEDIATELY.
-##
-
-
 import asyncio
+import hashlib
 import inspect
 import logging
 import os
@@ -24,36 +7,33 @@ import pickle
 import sys
 from tempfile import TemporaryFile
 
+import aurum as au
 import numpy as np
 
 from .cache import StepCache
 from .singleton import SingletonDecorator
 
-logging = logging.getLogger('stripping')
-
-try:
-    import aurum as au
-except ImportError as error:
-    logging.warn(f"Not using Aurum: {str(error)}")
-except Exception as error:
-    pass
+has_catalysis = True
 
 try:
     from catalysis.storage import StorageClient
-
-    has_catalysis = True
-
 except ImportError as error:
     has_catalysis = False
-    logging.warn(f"Not using Catalysis: {str(error)}")
-except Exception as error:
-    pass
+
+logging = logging.getLogger('stripping')
 
 
 @SingletonDecorator
 class Context:
     __context_location = None
     catalysis_client = None
+
+    @property
+    def attr_hash_location(self):
+
+        ctx_map_name = "ctx_map"
+
+        return os.path.join("/tmp", ctx_map_name)
 
     def register_context_location(self, context_location):
         self.__context_location = context_location
@@ -80,11 +60,20 @@ class Context:
         raise AttributeError(f"Attribute '{attr_name}' was not found.")
 
     def serialize(self) -> None:
+
+        if os.path.exists(self.attr_hash_location):
+            with open(self.attr_hash_location, "rb") as f:
+                attr_hash_list = pickle.load(f)
+        else:
+            attr_hash_list = list()
+
         for attr in dir(self):
-            if attr.startswith("_") or attr == 'self':
+
+            if attr.startswith("_") or attr == 'self' or attr == "catalysis_client" or attr == "attr_hash_location":
                 continue
 
             attribute = getattr(self, attr)
+
             if inspect.ismethod(attribute):
                 continue
 
@@ -92,26 +81,37 @@ class Context:
                 continue
 
             context_file_name = os.path.join(self.__context_location, attr)
-            logging.info(f"Serializing context attribute '{attr}' to '{context_file_name}'...")
-            if self.catalysis_client is not None:
-                with self.catalysis_client.open(context_file_name, 'wb') as attr_file:
-                    if isinstance(attribute, np.ndarray):
-                        logging.debug(f"Context Attribute '{attr}' is a numpy array.")
-                        outfile = TemporaryFile()
-                        np.save(outfile, attribute)
-                        with open(outfile) as tf:
-                            attr_file.write(tf.read())
-                    else:
-                        logging.debug(f"Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
-                        attr_file.write(pickle.dumps(attribute))
+
+            if not isinstance(attribute, bytes):
+                attr_hash = hashlib.sha224(bytes(attribute, "utf-8")).hexdigest()
             else:
-                with open(context_file_name, 'wb') as attr_file:
-                    if isinstance(attribute, np.ndarray):
-                        logging.debug(f"Context Attribute '{attr}' is a numpy array.")
-                        np.save(attr_file, attribute)
-                    else:
-                        logging.debug(f"  Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
-                        pickle.dump(attribute, attr_file)
+                attr_hash = hashlib.sha224(attribute).hexdigest()
+
+            if attr_hash in attr_hash_list:
+                logging.info(f"Skipping serializing context attribute '{attr}' to '{context_file_name}'...")
+                continue
+
+            logging.info(f"Serializing context attribute '{attr}' to '{context_file_name}'...")
+            attr_hash_list.append(attr_hash)
+
+            if self.catalysis_client is not None:
+                attr_file = self.catalysis_client.open(context_file_name, 'wb')
+            else:
+                attr_file = open(context_file_name, 'wb')
+
+            if isinstance(attribute, np.ndarray):
+                logging.debug(f"Context Attribute '{attr}' is a numpy array.")
+                outfile = TemporaryFile()
+                np.save(outfile.read().decode("utf-8"), attribute)
+                attr_file.write(outfile.read())
+            else:
+                logging.debug(f"Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
+                attr_file.write(pickle.dumps(attribute))
+
+            attr_file.close()
+
+        with open(self.attr_hash_location, "wb+") as f:
+            f.write(pickle.dumps(attr_hash_list))
 
     def deserialize(self) -> None:
 
