@@ -5,13 +5,13 @@ import logging
 import os
 import pickle
 import sys
-from tempfile import TemporaryFile
 
 import aurum as au
 import numpy as np
 
 from .cache import StepCache
 from .singleton import SingletonDecorator
+from .to_bytes import to_bytes
 
 has_catalysis = True
 
@@ -75,10 +75,9 @@ class Context:
 
             context_file_name = os.path.join(self.__context_location, attr)
 
-            if isinstance(attribute, str):
-                attr_hash = hashlib.sha224(bytes(attribute, "utf-8")).hexdigest()
-            else:
-                attr_hash = hashlib.sha224(pickle.dumps(attribute)).hexdigest()
+            serialized_attr = to_bytes(attribute)
+
+            attr_hash = hashlib.sha224(serialized_attr).hexdigest()
 
             if attr_hash in attr_hash_list:
                 logging.info(f"Skipping serializing context attribute '{attr}' to '{context_file_name}'...")
@@ -88,20 +87,12 @@ class Context:
             attr_hash_list.append(attr_hash)
 
             if self.catalysis_client is not None:
-                attr_file = self.catalysis_client.open(context_file_name, 'wb')
+                attr_file = self.catalysis_client.open
             else:
-                attr_file = open(context_file_name, 'wb')
+                attr_file = open
 
-            if isinstance(attribute, np.ndarray):
-                logging.debug(f"Context Attribute '{attr}' is a numpy array.")
-                outfile = TemporaryFile()
-                np.save(outfile.read().decode("utf-8"), attribute)
-                attr_file.write(outfile.read())
-            else:
-                logging.debug(f"Context Attribute '{attr}' is a python object of type '{type(attribute)}'.")
-                attr_file.write(pickle.dumps(attribute))
-
-            attr_file.close()
+            with attr_file(context_file_name, 'wb') as f:
+                f.write(serialized_attr)
 
         with open(attr_hash_location, "wb+") as f:
             f.write(pickle.dumps(attr_hash_list))
@@ -119,31 +110,17 @@ class Context:
     def _deserialize(self, attr_file_name):
         logging.info(f"Deserializing context attribute from '{attr_file_name}'")
 
-        # TODO Refactor this to be more elegant
         if self.catalysis_client is not None:
-            with self.catalysis_client.open(attr_file_name, 'rb') as attr_file:
-                try:
-                    logging.debug(f"Attempting to deserialize '{attr_file_name}' with pickle...")
-                    value = pickle.load(attr_file)
-                    logging.debug(
-                        f"Successfully deserialized '{attr_file_name}' as a python object of "
-                        f"type '{type(value)}'")
-                except Exception:
-                    logging.debug(f"Attempting to deserialize '{attr_file_name}' with numpy...")
-                    value = np.load(attr_file)
-                    logging.debug(f"Successfully deserialized '{attr_file_name}' as a numpy array.")
+            attr_file_func = self.catalysis_client.open
         else:
-            with open(attr_file_name, 'rb') as attr_file:
-                try:
-                    logging.debug(f"Attempting to deserialize '{attr_file_name}' with pickle...")
-                    value = pickle.load(attr_file)
-                    logging.debug(
-                        f"Successfully deserialized '{attr_file_name}' as a python object of "
-                        f"type '{type(value)}'")
-                except Exception:
-                    logging.debug(f"Attempting to deserialize '{attr_file_name}' with numpy...")
-                    value = np.load(attr_file)
-                    logging.debug(f"Successfully deserialized '{attr_file_name}' as a numpy array.")
+            attr_file_func = open
+
+        with attr_file_func(attr_file_name, 'rb') as attr_file:
+            try:
+                value = pickle.load(attr_file)
+            except Exception:
+                value = np.frombuffer(attr_file)
+
         return value
 
 
