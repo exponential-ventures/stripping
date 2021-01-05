@@ -66,12 +66,7 @@ def encode_labels():
     c.X_train[:, 1] = c.x_train_encoder.fit_transform(c.X_train[:, 1])
     c.X_train[:, 3] = c.x_train_encoder.fit_transform(c.X_train[:, 3])
     c.X_train[:, 4] = c.x_train_encoder.fit_transform(c.X_train[:, 4])
-
-    c.x_test_encoder = LabelEncoder()
-    c.X_test[:, 0] = c.x_test_encoder.fit_transform(c.X_test[:, 0])
-    c.X_test[:, 1] = c.x_test_encoder.fit_transform(c.X_test[:, 1])
-    c.X_test[:, 3] = c.x_test_encoder.fit_transform(c.X_test[:, 3])
-    c.X_test[:, 4] = c.x_test_encoder.fit_transform(c.X_test[:, 4])
+    #######........
 
 
 @st.step()
